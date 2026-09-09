@@ -1,0 +1,400 @@
+diff --git a/.claude/hooks/protect-config.sh b/.claude/hooks/protect-config.sh
+old mode 100755
+new mode 100644
+index 31f0c8e..efe4828
+--- a/.claude/hooks/protect-config.sh
++++ b/.claude/hooks/protect-config.sh
+@@ -69,7 +69,7 @@ case "$tool_name" in
+         ;;
+     esac
+ 
+-    # ---- Denied-command guard (issue #57) ----------------------------------
++    # ---- Denied-command guard ----------------------------------
+     # The permissions.deny / sandbox excludedCommands matchers in settings.json
+     # only see the PREFIX of the command string, so a denied command wrapped in
+     # a multi-statement script (e.g. `X=1; git clone ...`) or hidden behind a
+@@ -82,7 +82,7 @@ case "$tool_name" in
+     #   ASK verbs (git clone/fetch/pull, force-push) are allowed to run, but
+     #   only at the literal start of a single, unprefixed statement so the
+     #   "ask" matcher can prompt; wrapped or hidden forms are blocked and must
+-    #   be re-issued as a standalone command. One carve-out (issue #174):
++    #   be re-issued as a standalone command. One carve-out:
+     #   git fetch from a trusted remote is exempt from the visible-position
+     #   rule, because it reaches no new host and writes nothing outside .git.
+     #   See is_safe_fetch below.
+diff --git a/.claude/hooks/status-banner.sh b/.claude/hooks/status-banner.sh
+old mode 100755
+new mode 100644
+index a5c20cb..874ef23
+--- a/.claude/hooks/status-banner.sh
++++ b/.claude/hooks/status-banner.sh
+@@ -1,7 +1,7 @@
+ #!/usr/bin/env bash
+ # Unified SessionStart hook. Same script fires from two scopes:
+ #
+-#   team mode (referenced by Apify/.claude/settings.json):
++#   team mode (referenced by <workspace>/.claude/settings.json):
+ #     Runs whenever team settings are loaded.
+ #       - Local CLI  : emits ACTIVE (settings path).
+ #       - Cloud      : emits ACTIVE (cloud, team=NAME) when the bootstrap
+@@ -10,13 +10,13 @@
+ #                      the setup script never composed the team artifacts.
+ #
+ #   user mode (installed into ~/.claude/settings.json by scripts/install.sh):
+-#     Runs on every session. Inside an Apify tree with team settings loaded,
++#     Runs on every session. Inside an workspace tree with team settings loaded,
+ #     stays silent (team hook handles ACTIVE). Also silent when the session is
+ #     anchored at a stamped department/team folder, whose own settings.json
+-#     emits the team-folder banner (issue #141). Inside an Apify tree without
++#     emits the team-folder banner. Inside an workspace tree without
+ #     any of those - or in a cloud session with no bootstrap manifest - emits
+ #     NOT DETECTED, the canonical string the rule in
+-#     .claude/rules/security-check.md keys off of. Outside any Apify tree,
++#     .claude/rules/security-check.md keys off of. Outside any workspace tree,
+ #     silent.
+ #
+ # Usage: status-banner.sh [team|user]  (defaults to user)
+@@ -25,10 +25,10 @@ set -u
+ 
+ MODE="${1:-user}"
+ 
+-# Find the Apify root. Walk up from cwd looking for the three markers:
++# Find the workspace root. Walk up from cwd looking for the three markers:
+ # .claude/settings.json + CLAUDE.md + departments/. Defensive — each hook
+ # invocation verifies for itself rather than trusting env vars.
+-find_apify_root() {
++find_workspace_root() {
+   local dir
+   dir="$(pwd)"
+   while [ "$dir" != "/" ] && [ -n "$dir" ]; do
+@@ -43,7 +43,7 @@ find_apify_root() {
+   return 1
+ }
+ 
+-APIFY_ROOT="$(find_apify_root || true)"
++WORKSPACE_ROOT="$(find_workspace_root || true)"
+ PROJECT_DIR="${CLAUDE_PROJECT_DIR:-}"
+ 
+ # Read team_input from the bootstrap manifest; prints "?" on any problem.
+@@ -81,7 +81,7 @@ ACTIVE_DETAIL="sandbox enabled, credential reads denied, WebFetch audited, prote
+ 
+ case "$MODE" in
+   team)
+-    ROOT="${APIFY_ROOT:-$PROJECT_DIR}"
++    ROOT="${WORKSPACE_ROOT:-$PROJECT_DIR}"
+ 
+     # Cloud: the bootstrap manifest is the signal that the setup script ran and
+     # composed the team artifacts. CLAUDE_CODE_REMOTE=true is set by cloud
+@@ -91,62 +91,62 @@ case "$MODE" in
+       MANIFEST="$ROOT/.claude/.bootstrap-manifest.json"
+       if [ -f "$MANIFEST" ]; then
+         emit \
+-          "Apify team security config: ACTIVE (cloud, team=$(manifest_team "$MANIFEST"))" \
++          "Workspace security config: ACTIVE (cloud, team=$(manifest_team "$MANIFEST"))" \
+           "$ACTIVE_DETAIL"
+       else
+         emit \
+-          "Apify team security config: NOT DETECTED" \
+-          "cloud session (CLAUDE_CODE_REMOTE=true) but no bootstrap manifest at $MANIFEST. The setup script ('bash Apify/scripts/install.sh') did not run or failed, so team artifacts are not composed. Recreate the cloud environment or re-run its setup script."
++          "Workspace security config: NOT DETECTED" \
++          "cloud session (CLAUDE_CODE_REMOTE=true) but no bootstrap manifest at $MANIFEST. The setup script ('bash <your-repo>/scripts/install.sh') did not run or failed, so team artifacts are not composed. Recreate the cloud environment or re-run its setup script."
+       fi
+       exit 0
+     fi
+ 
+     # Local CLI: the team hook only fires when the team settings.json loaded in
+     # this session, so we emit ACTIVE. If we can't locate the root (cwd outside
+-    # Apify), fall back to whatever we can describe.
++    # the workspace), fall back to whatever we can describe.
+     emit \
+-      "Apify team security config: ACTIVE ($ROOT/.claude/settings.json)" \
++      "Workspace security config: ACTIVE ($ROOT/.claude/settings.json)" \
+       "$ACTIVE_DETAIL"
+     ;;
+ 
+   user)
+-    # Not inside an Apify tree — nothing to say.
+-    [ -z "$APIFY_ROOT" ] && exit 0
++    # Not inside an workspace tree — nothing to say.
++    [ -z "$WORKSPACE_ROOT" ] && exit 0
+ 
+     # Cloud safety: a cloud session with no bootstrap manifest means the setup
+     # never ran. Surface NOT DETECTED even if it's a stray user-scope hook that
+     # fired (the team hook normally handles cloud, but don't rely on ordering).
+     if [ "${CLAUDE_CODE_REMOTE:-}" = "true" ] \
+-        && [ ! -f "$APIFY_ROOT/.claude/.bootstrap-manifest.json" ]; then
++        && [ ! -f "$WORKSPACE_ROOT/.claude/.bootstrap-manifest.json" ]; then
+       emit \
+-        "Apify team security config: NOT DETECTED" \
+-        "cloud session (CLAUDE_CODE_REMOTE=true) without a bootstrap manifest at $APIFY_ROOT/.claude/.bootstrap-manifest.json; the setup script did not run."
++        "Workspace security config: NOT DETECTED" \
++        "cloud session (CLAUDE_CODE_REMOTE=true) without a bootstrap manifest at $WORKSPACE_ROOT/.claude/.bootstrap-manifest.json; the setup script did not run."
+       exit 0
+     fi
+ 
+-    # Inside an Apify tree. If team settings loaded correctly,
+-    # CLAUDE_PROJECT_DIR will match the Apify root (desktop app), OR the
++    # Inside an workspace tree. If team settings loaded correctly,
++    # CLAUDE_PROJECT_DIR will match the workspace root (desktop app), OR the
+     # session was launched via scripts/claude.sh which sets
+-    # APIFY_CLAUDE_CODE_WORKSPACE_ROOT. Either way, stay silent — the team
++    # CLAUDE_WORKSPACE_ROOT. Either way, stay silent — the team
+     # hook emits ACTIVE for those cases.
+-    if [ "$PROJECT_DIR" = "$APIFY_ROOT" ] \
+-        || [ "${APIFY_CLAUDE_CODE_WORKSPACE_ROOT:-}" = "$APIFY_ROOT" ]; then
++    if [ "$PROJECT_DIR" = "$WORKSPACE_ROOT" ] \
++        || [ "${CLAUDE_WORKSPACE_ROOT:-}" = "$WORKSPACE_ROOT" ]; then
+       exit 0
+     fi
+ 
+-    # Team-folder policy (issue #141): a session anchored at a stamped
++    # Team-folder policy: a session anchored at a stamped
+     # department/team folder loads that folder's generated settings.json,
+     # whose inline SessionStart hook emits its own ACTIVE (or NOT DETECTED)
+     # banner. Stay silent so this user-scope hook does not contradict it.
+-    if [ -n "$PROJECT_DIR" ] && [ "$PROJECT_DIR" != "$APIFY_ROOT" ] \
++    if [ -n "$PROJECT_DIR" ] && [ "$PROJECT_DIR" != "$WORKSPACE_ROOT" ] \
+         && [ -f "$PROJECT_DIR/.claude/settings.json" ]; then
+       exit 0
+     fi
+ 
+-    # Inside Apify but team settings did NOT load.
++    # Inside the workspace but team settings did NOT load.
+     emit \
+-      "Apify team security config: NOT DETECTED" \
+-      "cwd: $(pwd); Apify root: $APIFY_ROOT; CLAUDE_PROJECT_DIR: ${PROJECT_DIR:-<unset>}. Restart via the 'claude' shell function, or run $APIFY_ROOT/scripts/claude.sh."
++      "Workspace security config: NOT DETECTED" \
++      "cwd: $(pwd); workspace root: $WORKSPACE_ROOT; CLAUDE_PROJECT_DIR: ${PROJECT_DIR:-<unset>}. Restart via the 'claude' shell function, or run $WORKSPACE_ROOT/scripts/claude.sh."
+     ;;
+ 
+   *)
+diff --git a/.claude/rules/security-check.md b/.claude/rules/security-check.md
+index 9446a8e..93c9a4b 100644
+--- a/.claude/rules/security-check.md
++++ b/.claude/rules/security-check.md
+@@ -49,7 +49,7 @@ If the user pastes what looks like an API key, token, password, private key, or
+ 3. Suggest environment variables or a gitignored `.env` file.
+ 4. Do not repeat the secret, save it, or include it in any tool call.
+ 
+-Patterns: `sk-...`, `apify_api_...`, `AKIA...` (AWS), long base64 after `Bearer`, PEM headers (`-----BEGIN`), JWT `xxx.yyy.zzz`.
++Patterns: `sk-...`, `ghp_...` (GitHub), `AKIA...` (AWS), long base64 after `Bearer`, PEM headers (`-----BEGIN`), JWT `xxx.yyy.zzz`.
+ 
+ ## WebFetch discipline
+ 
+@@ -59,12 +59,12 @@ WebFetch is allowed without per-domain prompting. Every call is logged to `~/.cl
+ 
+ At every session start event (startup, resume, clear, compact), look for:
+ 
+-- `Apify team security config: ACTIVE (...)` — proceed.
+-- `Apify team security config: NOT DETECTED` — stop.
++- `Workspace security config: ACTIVE (...)` — proceed.
++- `Workspace security config: NOT DETECTED` — stop.
+ - Neither present — treat as NOT DETECTED.
+ 
+ When NOT DETECTED:
+ 
+ 1. Refuse all tool use (Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch, MCP).
+-2. Tell the user: team security config missing. Restart from the Apify root, or run `scripts/install.sh`.
++2. Tell the user: team security config missing. Restart from the workspace root, or run `scripts/install.sh`.
+ 3. If the user explicitly overrides and instructs you to proceed, precede every tool call with: "Security config not loaded — this call runs without sandbox or deny rules."
+\ No newline at end of file
+diff --git a/.claude/settings.json b/.claude/settings.json
+index 1eb39b5..bda1028 100644
+--- a/.claude/settings.json
++++ b/.claude/settings.json
+@@ -6,26 +6,6 @@
+     "allow": [
+       "WebFetch",
+       "WebSearch",
+-
+-      "mcp__claude_ai_Apify__search-actors",
+-      "mcp__claude_ai_Apify__fetch-actor-details",
+-      "mcp__claude_ai_Apify__fetch-apify-docs",
+-      "mcp__claude_ai_Apify__search-apify-docs",
+-      "mcp__claude_ai_Apify__get-actor-output",
+-      "mcp__claude_ai_Apify__get-actor-run",
+-      "mcp__claude_ai_Apify__apify--rag-web-browser",
+-
+-      "mcp__claude_ai_Notion__notion-fetch",
+-      "mcp__claude_ai_Notion__notion-search",
+-
+-      "mcp__redash__execute_adhoc_query",
+-      "mcp__redash__execute_query",
+-      "mcp__redash__get_query",
+-      "mcp__redash__list_queries",
+-      "mcp__redash__list_data_sources",
+-      "mcp__redash__create_query",
+-      "mcp__redash__update_query",
+-
+       "Bash(ls:*)",
+       "Bash(find:*)",
+       "Bash(grep:*)",
+@@ -41,9 +21,6 @@
+       "Bash(xargs:*)",
+       "Bash(shasum:*)",
+       "Bash(npm run:*)",
+-      "Bash(vale:*)",
+-      "Bash(brew list:*)",
+-
+       "Bash(git add:*)",
+       "Bash(git commit:*)",
+       "Bash(git mv:*)",
+@@ -261,7 +238,7 @@
+         "hooks": [
+           {
+             "type": "command",
+-            "command": "\"${APIFY_CLAUDE_CODE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/.claude/hooks/protect-config.sh"
++            "command": "\"${CLAUDE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/.claude/hooks/protect-config.sh"
+           }
+         ]
+       },
+@@ -270,7 +247,7 @@
+         "hooks": [
+           {
+             "type": "command",
+-            "command": "\"${APIFY_CLAUDE_CODE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/.claude/hooks/protect-config.sh"
++            "command": "\"${CLAUDE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/.claude/hooks/protect-config.sh"
+           }
+         ]
+       },
+@@ -279,7 +256,7 @@
+         "hooks": [
+           {
+             "type": "command",
+-            "command": "\"${APIFY_CLAUDE_CODE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/.claude/hooks/webfetch-audit.sh"
++            "command": "\"${CLAUDE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/.claude/hooks/webfetch-audit.sh"
+           }
+         ]
+       }
+@@ -290,7 +267,7 @@
+         "hooks": [
+           {
+             "type": "command",
+-            "command": "\"${APIFY_CLAUDE_CODE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/.claude/hooks/status-banner.sh team"
++            "command": "\"${CLAUDE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/.claude/hooks/status-banner.sh team"
+           }
+         ]
+       },
+@@ -299,15 +276,10 @@
+         "hooks": [
+           {
+             "type": "command",
+-            "command": "if [ \"$CLAUDE_CODE_REMOTE\" = \"true\" ]; then python3 \"${APIFY_CLAUDE_CODE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/tools/bootstrap/bootstrap.py cloud --apply-only >/dev/null 2>&1 || true; fi"
++            "command": "if [ \"$CLAUDE_CODE_REMOTE\" = \"true\" ]; then python3 \"${CLAUDE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/tools/bootstrap/bootstrap.py cloud --apply-only >/dev/null 2>&1 || true; fi"
+           }
+         ]
+       }
+     ]
+-  },
+-
+-  "enableAllProjectMcpServers": true,
+-  "enabledMcpjsonServers": [
+-    "redash"
+-  ]
++  }
+ }
+diff --git a/.github/workflows/security-lint.yml b/.github/workflows/security-lint.yml
+index 36ab16e..810dfa1 100644
+--- a/.github/workflows/security-lint.yml
++++ b/.github/workflows/security-lint.yml
+@@ -104,7 +104,7 @@ jobs:
+               sys.exit(1)
+           PY
+ 
+-      - name: Team-folder settings stamps in sync (issue #141)
++      - name: Team-folder settings stamps in sync
+         run: |
+           set -e
+           python3 tools/bootstrap/bootstrap.py settings-sync --check
+@@ -130,8 +130,8 @@ jobs:
+               missing = {"~/.ssh/**", "~/.aws/**", "**/.env", "**/.mcp.json"} - deny_read
+               if missing:
+                   problems.append(f"{f}: sandbox.filesystem.denyRead missing {sorted(missing)}")
+-              if not s.get("env", {}).get("APIFY_TEAM_POLICY_VERSION"):
+-                  problems.append(f"{f}: env.APIFY_TEAM_POLICY_VERSION missing")
++              if not s.get("env", {}).get("WORKSPACE_TEAM_POLICY_VERSION"):
++                  problems.append(f"{f}: env.WORKSPACE_TEAM_POLICY_VERSION missing")
+               if s.get("enableAllProjectMcpServers") or s.get("enabledMcpjsonServers"):
+                   problems.append(f"{f}: MCP keys must not be present in team copies")
+           if problems:
+@@ -183,7 +183,7 @@ jobs:
+           python3 <<'PY'
+           import os, re, subprocess, sys
+           tracked = subprocess.run(["git", "ls-files"], capture_output=True, text=True).stdout.splitlines()
+-          # Broken @import lines load silently with no error (see #41 Q2), so a
++          # Broken @import lines load silently with no error, so a
+           # typo or rename is invisible at runtime. Verify every whole-line
+           # @import in a committed CLAUDE.md resolves, relative to that file's
+           # own directory. Targets that are intentionally absent and gitignored
+@@ -209,6 +209,6 @@ jobs:
+           if problems:
+               for p in problems:
+                   print(f"::error::{p}")
+-              print("::error::broken @import lines fail silently at load time (see #41 Q2); fix the path or gitignore the target")
++              print("::error::broken @import lines fail silently at load time; fix the path or gitignore the target")
+               sys.exit(1)
+           PY
+\ No newline at end of file
+diff --git a/scripts/claude.sh b/scripts/claude.sh
+old mode 100755
+new mode 100644
+index fca6ae1..8aef8e3
+--- a/scripts/claude.sh
++++ b/scripts/claude.sh
+@@ -1,7 +1,7 @@
+ #!/usr/bin/env bash
+ # Wrapper called by the shell function `claude()` installed by install.sh.
+-# Detects the Apify root by walking up from $PWD, then invokes `command claude`
+-# with the team settings file explicitly loaded and Apify root added as a
++# Detects the workspace root by walking up from $PWD, then invokes `command claude`
++# with the team settings file explicitly loaded and workspace root added as a
+ # writeable directory. Preserves original cwd so subfolder CLAUDE.md loads.
+ #
+ # Safe to invoke directly (`./scripts/claude.sh`) if the shell function is not
+@@ -9,10 +9,10 @@
+ 
+ set -euo pipefail
+ 
+-# Walk up from current directory to find an Apify root.
++# Walk up from current directory to find an workspace root.
+ # Markers: settings.json + CLAUDE.md + departments/ — all three required to
+ # avoid false positives on unrelated repos.
+-find_apify_root() {
++find_workspace_root() {
+   local dir
+   dir="$(pwd)"
+   while [ "$dir" != "/" ] && [ -n "$dir" ]; do
+@@ -27,16 +27,16 @@ find_apify_root() {
+   return 1
+ }
+ 
+-ROOT="$(find_apify_root)" || {
+-  # Not in an Apify tree — pass through to system claude.
++ROOT="$(find_workspace_root)" || {
++  # Not in an workspace tree — pass through to system claude.
+   exec command claude "$@"
+ }
+ 
+ # Export so the team SessionStart hook in settings.json can reference the
+-# Apify root without depending on $CLAUDE_PROJECT_DIR, which Claude Code
++# workspace root without depending on $CLAUDE_PROJECT_DIR, which Claude Code
+ # sets to the session cwd (the user's subfolder) — not to the directory
+ # containing the active settings.json.
+-export APIFY_CLAUDE_CODE_WORKSPACE_ROOT="$ROOT"
++export CLAUDE_WORKSPACE_ROOT="$ROOT"
+ 
+ exec command claude \
+   --settings "$ROOT/.claude/settings.json" \
+diff --git a/scripts/install.sh b/scripts/install.sh
+old mode 100755
+new mode 100644
+index 4592dfb..a12c45c
+--- a/scripts/install.sh
++++ b/scripts/install.sh
+@@ -1,5 +1,5 @@
+ #!/usr/bin/env bash
+-# Apify Claude Code workspace bootstrap (Bash shim).
++# Claude Code workspace bootstrap (Bash shim).
+ #
+ # Self-locating: works no matter the cwd. Cloud setup-script cwd is /home/user,
+ # not the repo root — the previous `cd "$(dirname "$0")/.."` form fails when

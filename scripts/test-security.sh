@@ -438,7 +438,7 @@ else
 fi
 
 # User mode inside the workspace with env var set = silent (team hook handles it)
-if out=$(WORKSPACE_CLAUDE_CODE_WORKSPACE_ROOT="$WORKSPACE_ROOT" \
+if out=$(CLAUDE_WORKSPACE_ROOT="$WORKSPACE_ROOT" \
          CLAUDE_PROJECT_DIR="$WORKSPACE_ROOT" \
          bash "$WORKSPACE_ROOT/.claude/hooks/status-banner.sh" user 2>&1) \
     && [ -z "$out" ]; then
@@ -449,7 +449,7 @@ else
 fi
 
 # User mode outside the workspace = silent
-if out=$(cd /tmp && WORKSPACE_CLAUDE_CODE_WORKSPACE_ROOT="" \
+if out=$(cd /tmp && CLAUDE_WORKSPACE_ROOT="" \
          CLAUDE_PROJECT_DIR="" \
          bash "$WORKSPACE_ROOT/.claude/hooks/status-banner.sh" user 2>&1) \
     && [ -z "$out" ]; then
@@ -463,7 +463,7 @@ fi
 # stamped settings.json emits its own banner; the user-scope hook must not
 # contradict it with NOT DETECTED)
 if out=$(cd "$WORKSPACE_ROOT/departments/marketing" 2>/dev/null && \
-         env -u WORKSPACE_CLAUDE_CODE_WORKSPACE_ROOT \
+         env -u CLAUDE_WORKSPACE_ROOT \
          CLAUDE_PROJECT_DIR="$WORKSPACE_ROOT/departments/marketing" \
          bash "$WORKSPACE_ROOT/.claude/hooks/status-banner.sh" user 2>&1) \
     && [ -z "$out" ]; then
@@ -475,7 +475,7 @@ fi
 
 # User mode inside the workspace without env var = NOT DETECTED JSON
 if out=$(cd "$WORKSPACE_ROOT/departments/marketing" 2>/dev/null && \
-         unset WORKSPACE_CLAUDE_CODE_WORKSPACE_ROOT; unset CLAUDE_PROJECT_DIR; \
+         unset CLAUDE_WORKSPACE_ROOT; unset CLAUDE_PROJECT_DIR; \
          bash "$WORKSPACE_ROOT/.claude/hooks/status-banner.sh" user 2>&1) \
     && echo "$out" | /usr/bin/python3 -m json.tool > /dev/null 2>&1 \
     && echo "$out" | grep -q "NOT DETECTED"; then

@@ -108,14 +108,14 @@ def _script_wrapper(script_rel, tool_label):
 
     Exec preserves stdin, so the root script receives the tool payload JSON
     exactly as if settings.json had referenced it directly. Exports
-    WORKSPACE_CLAUDE_CODE_WORKSPACE_ROOT (the same variable scripts/claude.sh
+    CLAUDE_WORKSPACE_ROOT (the same variable scripts/claude.sh
     sets) so the root scripts resolve paths from the real root, not from the
     team-folder CLAUDE_PROJECT_DIR.
     """
     return (
         _WALK_UP
         + 'h="$d/' + script_rel + '"; '
-        + 'if [ -x "$h" ]; then WORKSPACE_CLAUDE_CODE_WORKSPACE_ROOT="$d" exec "$h"; fi; '
+        + 'if [ -x "$h" ]; then CLAUDE_WORKSPACE_ROOT="$d" exec "$h"; fi; '
         + 'echo "Workspace team-folder policy v' + TEAM_POLICY_VERSION
         + ': workspace root hook ' + script_rel
         + ' not found above ${CLAUDE_PROJECT_DIR:-$PWD}; failing closed ('

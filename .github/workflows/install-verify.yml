@@ -74,7 +74,7 @@ jobs:
           # Isolate the install's HOME writes into a throwaway dir, and unset the
           # cloud marker so bootstrap takes the LOCAL install path.
           export HOME="$RUNNER_TEMP/fakehome"; mkdir -p "$HOME"
-          unset CLAUDE_CODE_REMOTE WORKSPACE_CLAUDE_CODE_WORKSPACE_ROOT CLAUDE_PROJECT_DIR WORKSPACE_TEAM WORKSPACE_PERSONAL_GIST || true
+          unset CLAUDE_CODE_REMOTE CLAUDE_WORKSPACE_ROOT CLAUDE_PROJECT_DIR WORKSPACE_TEAM WORKSPACE_PERSONAL_GIST || true
           REPO="$GITHUB_WORKSPACE"
           cd "$REPO"
           RC="$HOME/$RC_FILE"

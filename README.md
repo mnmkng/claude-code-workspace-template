@@ -25,7 +25,7 @@ Clone the template, open it in Claude Code, and run:
 
 The skill reads your public website (and, optionally, your LinkedIn company page and any documents you give it) to draft the company layer, interviews you for the org layer - departments, teams, owners, tools, terminology - shows you everything before writing a byte, then replaces the example company with yours, stamps the team security settings, and validates the result. Later, `/add-team` scaffolds a new department or team folder in one step. Full walkthrough: [Building out your team folder](docs-for-humans/building-your-team-folder.md).
 
-Requires Claude Code 2.0 or later and Python 3.9 or later.
+Requires a current Claude Code (hooks, skills, and the `sandbox` settings block) and Python 3.9 or later.
 
 ## Choosing your surface: web or CLI
 
