@@ -1,0 +1,214 @@
+name: security-lint
+
+on:
+  pull_request:
+    paths:
+      - "**/.claude/**"
+      - "**/CLAUDE.md"
+      - "**/.gitignore"
+      - "**/.env*"
+      - "**/.mcp.json"
+      - "tools/bootstrap/**"
+      - ".github/workflows/security-lint.yml"
+  push:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: No committed settings.local.json outside projects/
+        run: |
+          set -e
+          offenders=$(git ls-files | grep -E '(^|/)\.claude/settings\.local\.json$' | grep -v '^projects/' | grep -v '/projects/' || true)
+          if [ -n "$offenders" ]; then
+            echo "::error::settings.local.json committed outside projects/:"
+            echo "$offenders"
+            exit 1
+          fi
+
+      - name: No committed .env files
+        run: |
+          set -e
+          offenders=$(git ls-files | grep -E '(^|/)\.env(\..*)?$' | grep -v '\.env\.example$' || true)
+          if [ -n "$offenders" ]; then
+            echo "::error::.env files committed (only .env.example is allowed):"
+            echo "$offenders"
+            exit 1
+          fi
+
+      - name: No committed .mcp.json at any depth
+        run: |
+          set -e
+          offenders=$(git ls-files | grep -E '(^|/)\.mcp\.json$' || true)
+          if [ -n "$offenders" ]; then
+            echo "::error::.mcp.json committed (should be gitignored; use .env + \${VAR} expansion for secrets):"
+            echo "$offenders"
+            exit 1
+          fi
+
+      - name: .gitignore has required entries
+        run: |
+          set -e
+          required=(
+            "**/settings.local.json"
+            ".env*"
+            ".mcp.json"
+          )
+          missing=()
+          for entry in "${required[@]}"; do
+            if ! grep -Fqx "$entry" .gitignore; then
+              missing+=("$entry")
+            fi
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::.gitignore missing required entries:"
+            printf '  %s\n' "${missing[@]}"
+            exit 1
+          fi
+
+      - name: Team settings.json present and valid JSON
+        run: |
+          set -e
+          f=".claude/settings.json"
+          if [ ! -f "$f" ]; then
+            echo "::error::$f is missing"
+            exit 1
+          fi
+          if ! python3 -c "import json; json.load(open('$f'))" 2>/dev/null; then
+            echo "::error::$f is not valid JSON"
+            exit 1
+          fi
+
+      - name: Team settings.json has required keys
+        run: |
+          set -e
+          python3 <<'PY'
+          import json, sys
+          s = json.load(open(".claude/settings.json"))
+          problems = []
+          if s.get("permissions", {}).get("defaultMode") != "acceptEdits":
+              problems.append("permissions.defaultMode must be 'acceptEdits'")
+          if s.get("sandbox", {}).get("enabled") is not True:
+              problems.append("sandbox.enabled must be true")
+          deny_read = set(s.get("sandbox", {}).get("filesystem", {}).get("denyRead", []))
+          required_deny_read = {"~/.ssh/**", "~/.aws/**", "**/.env", "**/.mcp.json"}
+          missing = required_deny_read - deny_read
+          if missing:
+              problems.append(f"sandbox.filesystem.denyRead missing: {sorted(missing)}")
+          if problems:
+              for p in problems:
+                  print(f"::error::{p}")
+              sys.exit(1)
+          PY
+
+      - name: Team-folder settings stamps in sync (issue #141)
+        run: |
+          set -e
+          python3 tools/bootstrap/bootstrap.py settings-sync --check
+
+      - name: Team-folder settings have required keys
+        run: |
+          set -e
+          python3 <<'PY'
+          import json, subprocess, sys
+          tracked = subprocess.run(["git", "ls-files"], capture_output=True, text=True).stdout.splitlines()
+          copies = [f for f in tracked if f.startswith("departments/") and f.endswith("/.claude/settings.json")]
+          if not copies:
+              print("::error::no tracked team-folder settings.json found (expected stamps from settings-sync)")
+              sys.exit(1)
+          problems = []
+          for f in copies:
+              s = json.load(open(f))
+              if s.get("permissions", {}).get("defaultMode") != "acceptEdits":
+                  problems.append(f"{f}: permissions.defaultMode must be 'acceptEdits'")
+              if s.get("sandbox", {}).get("enabled") is not True:
+                  problems.append(f"{f}: sandbox.enabled must be true")
+              deny_read = set(s.get("sandbox", {}).get("filesystem", {}).get("denyRead", []))
+              missing = {"~/.ssh/**", "~/.aws/**", "**/.env", "**/.mcp.json"} - deny_read
+              if missing:
+                  problems.append(f"{f}: sandbox.filesystem.denyRead missing {sorted(missing)}")
+              if not s.get("env", {}).get("APIFY_TEAM_POLICY_VERSION"):
+                  problems.append(f"{f}: env.APIFY_TEAM_POLICY_VERSION missing")
+              if s.get("enableAllProjectMcpServers") or s.get("enabledMcpjsonServers"):
+                  problems.append(f"{f}: MCP keys must not be present in team copies")
+          if problems:
+              for p in problems:
+                  print(f"::error::{p}")
+              sys.exit(1)
+          PY
+
+      - name: Hook scripts are executable
+        run: |
+          set -e
+          failed=0
+          for f in .claude/hooks/*.sh; do
+            [ -x "$f" ] || { echo "::error::$f is not executable (chmod +x it)"; failed=1; }
+          done
+          exit $failed
+
+      - name: CLAUDE.md folder names are globally unique
+        run: |
+          set -e
+          python3 <<'PY'
+          import os, subprocess, sys, collections
+          tracked = subprocess.run(["git", "ls-files"], capture_output=True, text=True).stdout.splitlines()
+          # Cloud team resolution (tools/bootstrap resolve_team) keys on the
+          # basename of a CLAUDE.md-containing folder, so those basenames must be
+          # globally unique. tools/bootstrap/** is tooling + test fixtures, not
+          # team content, so it is excluded.
+          dirs = collections.defaultdict(list)
+          for f in tracked:
+              if os.path.basename(f) != "CLAUDE.md":
+                  continue
+              if f.startswith("tools/bootstrap/"):
+                  continue
+              d = os.path.dirname(f)
+              if not d:                               # repo-root CLAUDE.md is not a team
+                  continue
+              dirs[os.path.basename(d)].append(d)
+          dups = {b: sorted(ds) for b, ds in dirs.items() if len(ds) > 1}
+          if dups:
+              for b, ds in sorted(dups.items()):
+                  print(f"::error::folder name '{b}' contains a CLAUDE.md in multiple places: {ds}")
+              print("::error::folder names containing a CLAUDE.md must be globally unique (cloud team resolution keys on the basename)")
+              sys.exit(1)
+          PY
+
+      - name: "@import lines in committed CLAUDE.md files resolve"
+        run: |
+          set -e
+          python3 <<'PY'
+          import os, re, subprocess, sys
+          tracked = subprocess.run(["git", "ls-files"], capture_output=True, text=True).stdout.splitlines()
+          # Broken @import lines load silently with no error (see #41 Q2), so a
+          # typo or rename is invisible at runtime. Verify every whole-line
+          # @import in a committed CLAUDE.md resolves, relative to that file's
+          # own directory. Targets that are intentionally absent and gitignored
+          # (e.g. CLAUDE.local.md) are allowed. tools/bootstrap/** fixtures are
+          # excluded (they carry deliberately-broken imports for testing).
+          cmds = [f for f in tracked
+                  if os.path.basename(f) == "CLAUDE.md" and not f.startswith("tools/bootstrap/")]
+          imp = re.compile(r"^\s*@(\S+)\s*$")
+          problems = []
+          for f in cmds:
+              base = os.path.dirname(f)
+              for n, line in enumerate(open(f, encoding="utf-8").read().splitlines(), 1):
+                  m = imp.match(line)
+                  if not m:
+                      continue
+                  target = m.group(1)
+                  resolved = target.lstrip("/") if target.startswith("/") else os.path.normpath(os.path.join(base, target))
+                  if os.path.exists(resolved):
+                      continue
+                  if subprocess.run(["git", "check-ignore", "-q", resolved], capture_output=True).returncode == 0:
+                      continue
+                  problems.append(f"{f}:{n}: @import '{target}' -> '{resolved}' does not exist and is not gitignored")
+          if problems:
+              for p in problems:
+                  print(f"::error::{p}")
+              print("::error::broken @import lines fail silently at load time (see #41 Q2); fix the path or gitignore the target")
+              sys.exit(1)
+          PY

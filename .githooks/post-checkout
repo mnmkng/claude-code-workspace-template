@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# post-checkout: self-heals engineer CLI setup after every `git pull` or
+# branch switch. Activated by `git config core.hooksPath .githooks`, which
+# install.sh configures.
+#
+# Git passes three args to post-checkout:
+#   $1 previous HEAD ref
+#   $2 new HEAD ref
+#   $3 flag: 1 = branch checkout, 0 = file checkout
+# Only run on branch checkouts.
+
+[ "${3:-0}" = "1" ] || exit 0
+
+root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+[ -z "$root" ] && exit 0
+[ -x "$root/scripts/install.sh" ] || exit 0
+
+# --check mode: idempotent repair, prints only if something changed.
+"$root/scripts/install.sh" --check || true
+exit 0

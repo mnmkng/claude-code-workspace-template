@@ -1,0 +1,74 @@
+# CODEOWNERS for the knowledge workspace.
+#
+# Format: each line maps a path pattern to one or more GitHub usernames or teams.
+# Patterns follow gitignore-style syntax. Last matching pattern wins, so
+# more-specific rules (teams) must come AFTER less-specific ones (departments).
+#
+# Owners must have write or admin access on the repo, or GitHub silently
+# ignores the entry. Multiple owners on one line = any one of them can satisfy
+# a required review. Use `@your-org/team-slug` to route to a GitHub team instead
+# of an individual.
+#
+# GitHub never requests a review from the PR author and never falls back to
+# an earlier pattern, so a line whose only owner is the author would request
+# nobody at all. Team lines carry the department lead as the second owner to
+# cover that case. Department lines carry only the department lead: the
+# codeowners-fallback workflow requests a review from the owners on the `*`
+# default line when (and only when) the PR author is the sole owner of a
+# changed file, so leads' own PRs still get a reviewer without the fallbacks
+# being requested on every department PR.
+# That workflow only understands the pattern forms used below (`*`, `/exact/file`,
+# `/dir/` prefix, `/dir/**/file` glob) - keep new lines in those forms. A form it
+# does not understand fails silently: GitHub honors the line, the workflow skips
+# it, and the two then disagree about who owns the file.
+#
+# Handles below are placeholders prefixed with `@TODO-`. Search-and-replace
+# them with real GitHub handles. Lines with unresolved `@TODO-` handles are
+# silently ignored by GitHub, so partial fills are safe to land. The
+# `setup-workspace` skill fills them in from the interview.
+#
+# Auto-request only by default. To require approval before merge, enable
+# "Require review from Code Owners" in branch protection for `main`.
+
+# ---------------------------------------------------------------------------
+# Default - workspace owners. Also the fallback reviewers used by the
+# codeowners-fallback workflow.
+# ---------------------------------------------------------------------------
+
+*                                                                  @TODO-workspace-owner
+
+# ---------------------------------------------------------------------------
+# Departments
+# ---------------------------------------------------------------------------
+
+/departments/sales/                                                @TODO-sales-lead
+/departments/accounting/                                           @TODO-accounting-lead
+/departments/warehouse/                                            @TODO-warehouse-lead
+/departments/customer-service/                                     @TODO-customer-service-lead
+/departments/human-resources/                                      @TODO-hr-lead
+/departments/quality-assurance/                                    @TODO-qa-lead
+
+# ---------------------------------------------------------------------------
+# Teams - override the dept owner for that team's folder.
+# ---------------------------------------------------------------------------
+
+/departments/sales/teams/scranton-sales/                           @TODO-scranton-sales-lead @TODO-sales-lead
+
+# ---------------------------------------------------------------------------
+# Workspace-wide and cross-cutting files - workspace owners.
+# ---------------------------------------------------------------------------
+
+/CLAUDE.md                                                         @TODO-workspace-owner
+/CLAUDE.local.example.md                                           @TODO-workspace-owner
+/CONTRIBUTING.md                                                   @TODO-workspace-owner
+/README.md                                                         @TODO-workspace-owner
+/.gitignore                                                        @TODO-workspace-owner
+
+/.claude/                                                          @TODO-workspace-owner
+/.github/                                                          @TODO-workspace-owner
+/.githooks/                                                        @TODO-workspace-owner
+/scripts/                                                          @TODO-workspace-owner
+/tools/                                                            @TODO-workspace-owner
+/docs-for-humans/                                                  @TODO-workspace-owner
+/context/                                                          @TODO-workspace-owner
+/departments/**/.claude/settings.json                              @TODO-workspace-owner

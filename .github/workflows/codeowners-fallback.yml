@@ -1,0 +1,111 @@
+name: codeowners-fallback
+
+# CODEOWNERS can't express fallback ownership: GitHub never requests a review
+# from the PR author, so a file whose only code owner is the author gets no
+# reviewer at all (department leads editing their own department). This
+# workflow closes that gap: it requests a review from the fallback reviewers
+# only when the PR author is the sole code owner of some changed file. On
+# every other PR, CODEOWNERS already requests someone and the fallbacks stay
+# out of it.
+#
+# The fallback reviewers are the owners on the `*` default line of CODEOWNERS,
+# so there is nothing to configure here. Team slugs (`@org/team`) on that line
+# are skipped; requesting a team review needs a different API call and the
+# individual owners are enough for the fallback.
+#
+# The matcher only understands the pattern forms used in our CODEOWNERS:
+# `*`, `/exact/file`, `/dir/` prefixes, and `/dir/**/file` globs. Keep
+# CODEOWNERS lines in those forms (the CODEOWNERS header says the same).
+# A form this matcher does not understand does not fail loudly: the line is
+# skipped here while GitHub still honors it, so the two disagree about who
+# owns the file and the fallback fires on the wrong PRs.
+#
+# Runs on opened + ready_for_review only, deliberately not on synchronize:
+# re-running on every push would re-request the fallbacks after one already
+# reviewed, which is exactly the noise this workflow exists to remove.
+
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  request-fallback:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const author = pr.user.login.toLowerCase();
+
+            const rules = require('fs').readFileSync('.github/CODEOWNERS', 'utf8')
+              .split('\n')
+              .map(line => line.trim())
+              .filter(line => line && !line.startsWith('#'))
+              .map(line => {
+                const [pattern, ...owners] = line.split(/\s+/);
+                return { pattern, owners: owners.map(o => o.replace(/^@/, '').toLowerCase()) };
+              });
+
+            // Fallbacks = individual owners on the `*` default line, minus the
+            // author and minus unresolved @TODO- placeholders and team slugs.
+            const defaultRule = rules.find(r => r.pattern === '*');
+            const FALLBACKS = (defaultRule ? defaultRule.owners : [])
+              .filter(o => !o.startsWith('todo-') && !o.includes('/'));
+            const reviewers = FALLBACKS.filter(f => f !== author);
+            if (reviewers.length === 0) {
+              core.info('No fallback reviewers configured on the CODEOWNERS default line.');
+              return;
+            }
+
+            const matches = (pattern, file) => {
+              if (pattern === '*') return true;
+              if (!pattern.startsWith('/')) return false;
+              const p = pattern.slice(1);
+              if (p.endsWith('/')) return file.startsWith(p);
+              if (!p.includes('*')) return file === p;
+              // Glob form, e.g. /departments/**/.claude/settings.json: `**/`
+              // spans zero or more whole path segments, a single `*` stays
+              // inside one segment, and everything else is a literal.
+              const rx = p
+                .split('**/')
+                .map(seg => seg
+                  .split('*')
+                  .map(s => s.replace(/[.+?^${}()|[\]\\]/g, '\\$&'))
+                  .join('[^/]*'))
+                .join('(?:[^/]+/)*');
+              return new RegExp(`^${rx}$`).test(file);
+            };
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              per_page: 100,
+            });
+
+            // Last matching CODEOWNERS pattern wins. A file is orphaned when
+            // its every owner is the PR author (a team slug contains '/' and
+            // can never equal a login, so team-owned files are never orphaned).
+            const orphaned = files
+              .map(f => f.filename)
+              .filter(file => {
+                const rule = rules.findLast(r => matches(r.pattern, file));
+                return rule && rule.owners.length > 0 && rule.owners.every(o => o === author);
+              });
+            if (orphaned.length === 0) return;
+
+            core.info(`Author is the sole code owner of:\n${orphaned.join('\n')}`);
+            await github.rest.pulls.requestReviewers({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              reviewers,
+            });

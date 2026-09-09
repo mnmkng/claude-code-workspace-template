@@ -1,0 +1,127 @@
+name: install-verify
+
+# End-to-end verification of the local engineer CLI install (issue #50).
+# The install logic is unit-tested, but the scripts/install.sh shim + the real
+# filesystem effects (shell rc, user-scope hook, git hooks path) had never been
+# exercised end to end on a clean machine. This job does that on Linux and macOS
+# (the zsh -> ~/.zshrc and bash -> ~/.bashrc detection paths), every PR that
+# touches the install surface and on every push to main.
+
+on:
+  pull_request:
+    paths:
+      - "scripts/install.sh"
+      - "scripts/claude.sh"
+      - "scripts/test-security.sh"
+      - "tools/bootstrap/**"
+      - ".githooks/**"
+      - ".claude/hooks/**"
+      # test-security.sh section 6 verifies the team-folder settings stamps
+      # (issue #141), so re-run when the policy source, the stamps, or the
+      # allowlist that keeps them trackable change.
+      - ".claude/settings.json"
+      - "departments/**/.claude/settings.json"
+      - ".gitignore"
+      - ".github/workflows/install-verify.yml"
+  push:
+    branches: [main]
+
+jobs:
+  local-install:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            shell_path: /bin/bash
+            rc_file: .bashrc
+            func_pattern: "claude()"
+          - os: macos-latest
+            shell_path: /bin/zsh
+            rc_file: .zshrc
+            func_pattern: "claude()"
+          - os: ubuntu-latest
+            shell_path: /usr/bin/fish
+            rc_file: .config/fish/config.fish
+            func_pattern: "function claude"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Bootstrap unit tests
+        run: python3 -m unittest discover -s tools/bootstrap/tests -t tools/bootstrap
+
+      - name: Install fish
+        if: contains(matrix.shell_path, 'fish')
+        run: sudo apt-get update && sudo apt-get install -y fish
+
+      - name: Verify local CLI install
+        env:
+          SHELL: ${{ matrix.shell_path }}
+          RC_FILE: ${{ matrix.rc_file }}
+          FUNC_PATTERN: ${{ matrix.func_pattern }}
+        run: |
+          # GitHub runs `run:` steps with `bash -e`. This harness intentionally
+          # captures non-zero exits (compose-unknown-team, missing-python3) into
+          # `out="$(...)"; rc=$?` to assert on them, so disable errexit and rely
+          # on the per-check tally + final `[ $fail -eq 0 ]` instead.
+          set -u
+          set +e
+          # Isolate the install's HOME writes into a throwaway dir, and unset the
+          # cloud marker so bootstrap takes the LOCAL install path.
+          export HOME="$RUNNER_TEMP/fakehome"; mkdir -p "$HOME"
+          unset CLAUDE_CODE_REMOTE WORKSPACE_CLAUDE_CODE_WORKSPACE_ROOT CLAUDE_PROJECT_DIR WORKSPACE_TEAM WORKSPACE_PERSONAL_GIST || true
+          REPO="$GITHUB_WORKSPACE"
+          cd "$REPO"
+          RC="$HOME/$RC_FILE"
+
+          pass=0; fail=0
+          ok(){ echo "OK  $1"; pass=$((pass+1)); }
+          no(){ echo "XX  $1"; fail=$((fail+1)); }
+
+          # 1. Cold install writes the three effects.
+          out="$(bash scripts/install.sh 2>&1)"; rc=$?
+          [ $rc -eq 0 ] && ok "cold install exit 0" || no "cold install rc=$rc :: $out"
+          { grep -q "WORKSPACE-CLAUDE-CODE-START" "$RC" && grep -qF "$FUNC_PATTERN" "$RC"; } \
+            && ok "shell function in ~/$RC_FILE" || no "shell function missing in ~/$RC_FILE"
+          # Fish-only: the generated function must parse under a real fish.
+          case "$SHELL" in
+            *fish)
+              fish -n "$RC" && ok "fish parses generated function" \
+                || no "fish failed to parse $RC" ;;
+          esac
+          python3 -c "import json,sys; s=json.load(open(sys.argv[1])); ss=s.get('hooks',{}).get('SessionStart',[]); sys.exit(0 if any('status-banner.sh' in h.get('command','') for e in ss for h in e.get('hooks',[])) else 1)" "$HOME/.claude/settings.json" \
+            && ok "user SessionStart hook merged" || no "user SessionStart hook missing"
+          [ "$(git -C "$REPO" config --local --get core.hooksPath)" = ".githooks" ] \
+            && ok "core.hooksPath = .githooks" || no "core.hooksPath not set"
+
+          # 2. Idempotent: --check is silent on a no-op and exits 0.
+          out="$(bash scripts/install.sh --check 2>&1)"; rc=$?
+          { [ $rc -eq 0 ] && [ -z "$out" ]; } && ok "--check silent on no-op" || no "--check not silent rc=$rc :: [$out]"
+
+          # 3. Drift -> --check reports the repair (the post-checkout self-heal contract).
+          python3 -c "import re,sys; p=sys.argv[1]; t=open(p).read(); open(p,'w').write(re.sub('# WORKSPACE-CLAUDE-CODE-START.*?# WORKSPACE-CLAUDE-CODE-END\n?','',t,flags=re.DOTALL))" "$RC"
+          out="$(bash scripts/install.sh --check 2>&1)"; rc=$?
+          { [ $rc -eq 0 ] && echo "$out" | grep -qi "would update"; } && ok "--check reports drift" || no "--check missed drift rc=$rc :: [$out]"
+
+          # 4. Subcommand passthrough reaches the Python tool (compose unknown team).
+          out="$(bash scripts/install.sh compose --team __definitely_not_a_team__ 2>&1)"; rc=$?
+          echo "$out" | grep -qi "not found" && ok "subcommand passthrough reaches compose" || no "passthrough failed rc=$rc :: $out"
+
+          # 5. Missing python3 -> clean shim error, exit 1. (Temp PATH with only
+          #    dirname, which the self-locating shim needs before the python3 check.)
+          BASH_ABS="$(command -v bash)"
+          NOPY="$RUNNER_TEMP/nopybin"; mkdir -p "$NOPY"; ln -s "$(command -v dirname)" "$NOPY/dirname"
+          out="$(PATH="$NOPY" "$BASH_ABS" scripts/install.sh 2>&1)"; rc=$?
+          { [ $rc -eq 1 ] && echo "$out" | grep -qi "python3 not found"; } && ok "missing python3 -> error exit 1" || no "missing-python3 rc=$rc :: $out"
+
+          # 6. Existing security smoke test still passes on a clean checkout.
+          out="$(bash scripts/test-security.sh 2>&1)"; rc=$?
+          [ $rc -eq 0 ] && ok "test-security.sh passes" || { no "test-security.sh rc=$rc"; echo "$out"; }
+
+          echo "==== install-verify (${{ matrix.os }}): pass=$pass fail=$fail ===="
+          [ $fail -eq 0 ]

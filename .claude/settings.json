@@ -1,0 +1,313 @@
+{
+  "autoMemoryEnabled": false,
+  "permissions": {
+    "defaultMode": "acceptEdits",
+
+    "allow": [
+      "WebFetch",
+      "WebSearch",
+
+      "mcp__claude_ai_Apify__search-actors",
+      "mcp__claude_ai_Apify__fetch-actor-details",
+      "mcp__claude_ai_Apify__fetch-apify-docs",
+      "mcp__claude_ai_Apify__search-apify-docs",
+      "mcp__claude_ai_Apify__get-actor-output",
+      "mcp__claude_ai_Apify__get-actor-run",
+      "mcp__claude_ai_Apify__apify--rag-web-browser",
+
+      "mcp__claude_ai_Notion__notion-fetch",
+      "mcp__claude_ai_Notion__notion-search",
+
+      "mcp__redash__execute_adhoc_query",
+      "mcp__redash__execute_query",
+      "mcp__redash__get_query",
+      "mcp__redash__list_queries",
+      "mcp__redash__list_data_sources",
+      "mcp__redash__create_query",
+      "mcp__redash__update_query",
+
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(wc:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(ln:*)",
+      "Bash(echo:*)",
+      "Bash(xargs:*)",
+      "Bash(shasum:*)",
+      "Bash(npm run:*)",
+      "Bash(vale:*)",
+      "Bash(brew list:*)",
+
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git mv:*)",
+      "Bash(git checkout:*)",
+      "Bash(git branch:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git restore:*)",
+      "Bash(git stash:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git ls-files:*)",
+      "Bash(git show:*)",
+      "Bash(git blame:*)",
+      "Bash(git grep:*)",
+      "Bash(git cat-file:*)",
+      "Bash(git describe:*)",
+      "Bash(git shortlog:*)",
+      "Bash(git reflog:*)",
+      "Bash(git tag)",
+      "Bash(git tag -l:*)",
+      "Bash(git tag --list:*)",
+      "Bash(git config --get:*)",
+      "Bash(git config --list)",
+      "Bash(git remote -v)",
+      "Bash(git remote get-url:*)",
+      "Bash(git remote show:*)",
+      "Bash(git fetch origin:*)",
+
+      "Bash(gh pr view:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh pr status)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh issue status)",
+      "Bash(gh repo view:*)",
+      "Bash(gh repo list:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run watch:*)",
+      "Bash(gh run download:*)",
+      "Bash(gh release view:*)",
+      "Bash(gh release list:*)",
+      "Bash(gh search:*)",
+      "Bash(gh status)",
+      "Bash(gh auth status)",
+      "Bash(gh label list:*)",
+      "Bash(gh workflow view:*)",
+      "Bash(gh workflow list:*)",
+      "Bash(gh gist view:*)",
+      "Bash(gh gist list:*)",
+      "Bash(gh ruleset list:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr comment:*)",
+      "Bash(gh pr edit:*)",
+      "Bash(gh pr ready:*)",
+      "Bash(gh issue create:*)",
+      "Bash(gh issue comment:*)",
+      "Bash(gh issue edit:*)",
+      "Bash(gh issue reopen:*)",
+      "Bash(gh label create:*)"
+    ],
+
+    "ask": [
+      "Bash(git pull:*)",
+      "Bash(git clone:*)",
+      "Bash(git fetch --all*)",
+      "Bash(git fetch http*)",
+      "Bash(git fetch ssh*)",
+      "Bash(git fetch git*)",
+      "Bash(git fetch /*)",
+      "Bash(git fetch .*)",
+      "Bash(git fetch * --upload-pack*)",
+      "Bash(git fetch * --recurse-submodules*)",
+      "Bash(git remote add:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(git remote rename:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git push --force-with-lease:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git rebase:*)",
+      "Bash(git clean -f:*)",
+      "Bash(git clean -fd:*)",
+      "Bash(git clean -fx:*)",
+      "Bash(git branch -D:*)",
+      "Bash(git branch -d:*)",
+      "Bash(git tag -d:*)",
+      "Bash(git tag --delete:*)",
+      "Bash(gh repo delete:*)",
+      "Bash(gh repo edit:*)",
+      "Bash(gh release delete:*)",
+      "Bash(gh pr close:*)",
+      "Bash(gh issue close:*)",
+      "Bash(gh api -X DELETE:*)",
+      "Bash(gh api -X POST:*)",
+      "Bash(gh api -X PATCH:*)",
+      "Bash(gh api -X PUT:*)",
+      "Bash(gh api --method DELETE:*)",
+      "Bash(gh api --method POST:*)",
+      "Bash(gh api --method PATCH:*)",
+      "Bash(gh api --method PUT:*)",
+      "Bash(gh secret set:*)",
+      "Bash(gh secret delete:*)",
+      "Bash(gh workflow disable:*)",
+      "Bash(gh ssh-key add:*)",
+      "Bash(gh gpg-key add:*)"
+    ],
+
+    "deny": [
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.config/gcloud/**)",
+      "Read(~/.netrc)",
+      "Read(~/.gnupg/**)",
+      "Read(~/.kube/**)",
+      "Read(~/.docker/config.json)",
+      "Read(~/Library/Keychains/**)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/.mcp.json)",
+
+      "Edit(~/.bashrc)",
+      "Edit(~/.zshrc)",
+      "Edit(~/.bash_profile)",
+      "Edit(~/.zprofile)",
+      "Edit(~/.profile)",
+      "Edit(**/.claude/settings.json)",
+      "Edit(**/.claude/settings.local.json)",
+      "Edit(**/.mcp.json)",
+      "Edit(**/.claude/hooks/**)",
+      "Edit(**/.claude/rules/security-check.md)",
+      "Edit(**/scripts/claude.sh)",
+      "Edit(**/scripts/install.sh)",
+      "Edit(**/.githooks/post-checkout)",
+      "Edit(**/.github/workflows/security-lint.yml)",
+
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(nc:*)",
+      "Bash(ssh:*)",
+      "Bash(scp:*)",
+      "Bash(sudo:*)",
+      "Bash(chmod 777:*)",
+      "Bash(gh auth token:*)",
+      "Bash(gh auth token)",
+      "Bash(gh auth login:*)",
+      "Bash(gh auth logout:*)",
+      "Bash(gh auth refresh:*)",
+      "Bash(git config --global credential.helper:*)"
+    ]
+  },
+
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "excludedCommands": ["gh *", "git *"],
+    "network": {
+      "allowedDomains": ["github.com", "*.github.com", "api.github.com"]
+    },
+    "filesystem": {
+      "allowWrite": [
+        "~/.claude/logs",
+        "~/.claude/projects",
+        "~/.npm",
+        "~/.cache"
+      ],
+      "denyWrite": [
+        "~/.bashrc",
+        "~/.zshrc",
+        "~/.bash_profile",
+        "~/.zprofile",
+        "~/.profile",
+        "/etc/**",
+        "~/.ssh/**",
+        "~/.aws/**",
+        "~/.gnupg/**",
+        "~/.config/gcloud/**",
+
+        "**/.claude/settings.json",
+        "**/.claude/settings.local.json",
+        "**/.mcp.json",
+        "**/.claude/hooks/**",
+        "**/.claude/rules/security-check.md",
+        "**/scripts/claude.sh",
+        "**/scripts/install.sh",
+        "**/.githooks/post-checkout",
+        "**/.github/workflows/security-lint.yml",
+        "**/CLAUDE.local.md",
+        "**/.claude/.bootstrap-*"
+      ],
+      "denyRead": [
+        "~/.ssh/**",
+        "~/.aws/**",
+        "~/.config/gcloud/**",
+        "~/.netrc",
+        "~/.gnupg/**",
+        "~/.kube/**",
+        "~/.docker/config.json",
+        "~/Library/Keychains/**",
+        "**/.env",
+        "**/.env.*",
+        "**/.mcp.json"
+      ]
+    }
+  },
+
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${APIFY_CLAUDE_CODE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/.claude/hooks/protect-config.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${APIFY_CLAUDE_CODE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/.claude/hooks/protect-config.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${APIFY_CLAUDE_CODE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/.claude/hooks/webfetch-audit.sh"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${APIFY_CLAUDE_CODE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/.claude/hooks/status-banner.sh team"
+          }
+        ]
+      },
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ \"$CLAUDE_CODE_REMOTE\" = \"true\" ]; then python3 \"${APIFY_CLAUDE_CODE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/tools/bootstrap/bootstrap.py cloud --apply-only >/dev/null 2>&1 || true; fi"
+          }
+        ]
+      }
+    ]
+  },
+
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "redash"
+  ]
+}

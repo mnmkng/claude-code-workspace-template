@@ -1,0 +1,387 @@
+#!/usr/bin/env python3
+"""Look up people in references/org-chart.json without loading the whole file.
+
+The data is regenerated from the HR system: names, titles, departments, and
+reporting lines come from there, and "nickname" is the person's chat display name, present
+only where it differs from the formal name. The "manager" field is what encodes
+the reporting tree.
+
+It may not contain a reliable team: many HR systems keep it as a sub-department
+their export does not expose, so a team cannot always be looked up by name -
+resolve it through its lead's subtree with --tree instead.
+
+Matching is accent- and case-insensitive and covers the nickname as well as the
+formal name, so "Dusan Antos" finds "Dušan Antoš" and "Ondra" finds
+"Ondřej Urban". That is the point: the caller usually does not know the correct
+spelling or which form the person goes by, which is why they are looking it up.
+
+Usage:
+    who_is.py <query>            person lookup; partial names and nicknames work
+    who_is.py --dept <name>      everyone in a department (partial match)
+    who_is.py --tree <name>      reporting subtree beneath a person
+    who_is.py --chain <name>     management chain from a person up to the top
+    who_is.py --stats            departments and headcount
+"""
+
+import argparse
+import json
+import os
+import signal
+import sys
+import unicodedata
+from pathlib import Path
+
+# Callers pipe this into head, and Python's default SIGPIPE handling turns the
+# closed pipe into a BrokenPipeError traceback. Restore the shell default so the
+# script just stops when the reader goes away.
+try:
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+except (AttributeError, ValueError):  # no SIGPIPE on Windows
+    pass
+
+# The data lives beside the script inside the skill, so the pair travels as one
+# unit - including when the Cloud bootstrap copies .claude/skills/ to the root.
+DATA_PATH = Path(__file__).resolve().parent.parent / "references" / "org-chart.json"
+
+
+def find_data() -> Path:
+    candidate = Path(os.environ.get("ORG_CHART_PATH") or DATA_PATH)
+    if candidate.is_file():
+        return candidate
+    sys.exit(
+        f"Org chart data not found at {candidate}.\n"
+        "The file is generated from the HR system. Populate it with
+"
+        "`who_is.py --import people.csv` or the company's sync process."
+    )
+
+
+# Letters that NFKD does not decompose, because the stroke or slash is part of
+# the letter rather than a combining accent. Without this, "Michal Olender" fails
+# to match "Michał Olender".
+TRANSLIT = str.maketrans({
+    "ł": "l", "Ł": "L", "ø": "o", "Ø": "O", "đ": "d", "Đ": "D",
+    "ı": "i", "ħ": "h", "ŧ": "t", "ŋ": "n", "ð": "d", "þ": "th",
+    "ß": "ss", "æ": "ae", "Æ": "AE", "œ": "oe", "Œ": "OE",
+})
+
+
+def fold(text: str) -> str:
+    """Strip accents and case so 'Antoš' and 'Antos' compare equal."""
+    if not text:
+        return ""
+    decomposed = unicodedata.normalize("NFKD", text)
+    stripped = "".join(c for c in decomposed if not unicodedata.combining(c))
+    return stripped.translate(TRANSLIT).casefold()
+
+
+def load():
+    data = json.loads(find_data().read_text(encoding="utf-8"))
+    people = data.get("people", [])
+    by_name = {p["name"]: p for p in people}
+    reports = {}
+    for p in people:
+        mgr = p.get("manager")
+        if mgr and mgr in by_name:
+            reports.setdefault(mgr, []).append(p)
+    for kids in reports.values():
+        kids.sort(key=lambda p: p["name"])
+    return data, people, by_name, reports
+
+
+def label(p) -> str:
+    """Name, plus only the part of the nickname that is not already in the name.
+
+    Chat display names often restate the surname - "Barbora Čelechovská" signs as
+    "Bára Čelechovská" - and echoing it reads as a duplication bug. Comparison is
+    folded, so "Vlada Dusek" drops against "Vladimír Dušek". The stored value keeps
+    the full chat string; only the rendering is trimmed.
+    """
+    nick = p.get("nickname")
+    if not nick:
+        return p["name"]
+    in_name = {t for t in fold(p["name"]).split() if t}
+    kept = " ".join(t for t in nick.split() if fold(t) not in in_name).strip()
+    return f"{p['name']} ({kept or nick})"
+
+
+def describe(p) -> str:
+    """Compact role line, used in every list, tree, and candidate set.
+
+    Shape: "<title> @ <team> - <department>", where the department is appended
+    only when it differs from the team. Both are shown because they answer
+    different questions and often disagree: Josef Jetmar's department is
+    "Web Automation Engineering" while his team is "Pro-Services Pod B". Where no
+    chat team exists the department takes the "@" slot, so the line never ends
+    up empty on the right.
+    """
+    title = p.get("title") or "Unknown role"
+    team = p.get("slack_team")
+    dept = p.get("department")
+    unit = team or dept
+    out = f"{title} @ {unit}" if unit else title
+    if team and dept and fold(team) != fold(dept):
+        out += f" - {dept}"
+    return out
+
+
+def find_people(people, query):
+    """Three tiers, most precise first.
+
+    The token tier matters more than it looks: a caller who types a nickname plus
+    a real surname ("Ondra Urban" for "Ondřej Urban") misses both the exact and
+    substring tiers, but still matches on the surname token.
+    """
+    q = fold(query)
+
+    def haystacks(p):
+        """Formal name and nickname are both valid ways to refer to someone."""
+        return [fold(p["name"]), fold(p.get("nickname") or "")]
+
+    exact = [p for p in people if q in [h for h in haystacks(p) if h]]
+    substring = [p for p in people if any(h and q in h for h in haystacks(p))]
+
+    # An exact hit wins, but never silently. Three Josefs go by a Pepa variant and
+    # only Válek is exactly "Pepa"; returning him alone with no signal is the one
+    # failure a name-verification tool must not have.
+    if exact:
+        others = [p for p in substring if p not in exact]
+        return exact, others
+
+    if substring:
+        return substring, []
+
+    q_tokens = [t for t in q.split() if t]
+    if not q_tokens:
+        return [], []
+    scored = []
+    for p in people:
+        name_tokens = fold(p["name"]).split() + fold(p.get("nickname") or "").split()
+        hits = sum(
+            1 for qt in q_tokens
+            if any(nt.startswith(qt) or qt.startswith(nt) for nt in name_tokens)
+        )
+        if hits:
+            scored.append((hits, p))
+    if not scored:
+        return [], []
+    best = max(h for h, _ in scored)
+    return [p for h, p in scored if h == best], []
+
+
+def chain_of(p, by_name):
+    """Walk up the management chain, guarding against a cycle in the data."""
+    chain, seen, cur = [], set(), p
+    while cur:
+        if cur["name"] in seen:
+            break
+        seen.add(cur["name"])
+        chain.append(cur)
+        cur = by_name.get(cur.get("manager") or "")
+    return list(reversed(chain))
+
+
+def print_card(p, by_name, reports):
+    print(label(p))
+    print(f"  Title:      {p.get('title') or 'Unknown role'}")
+    print(f"  Department: {p.get('department') or '-'}")
+    if p.get("slack_team"):
+        print(f"  Team:       {p['slack_team']} (from their chat profile)")
+
+    mgr = by_name.get(p.get("manager") or "")
+    if mgr:
+        print(f"  Manager:    {label(mgr)} - {describe(mgr)}")
+    elif p.get("manager"):
+        print(f"  Manager:    {p['manager']} (not in the directory)")
+    else:
+        print("  Manager:    - (top of the chart)")
+
+    kids = reports.get(p["name"], [])
+    if kids:
+        print(f"  Reports ({len(kids)}):")
+        for k in kids:
+            print(f"    - {label(k)} - {describe(k)}")
+        total = subtree_size(p["name"], reports)
+        if total != len(kids):
+            print(f"  Total beneath: {total}")
+    else:
+        print("  Reports:    none")
+
+    chain = chain_of(p, by_name)
+    if len(chain) > 1:
+        print("  Chain:      " + " > ".join(label(c) for c in chain))
+
+
+GROUP_LIMIT = 40
+
+
+def print_group(heading, hits):
+    shown = sorted(hits, key=lambda x: x["name"])[:GROUP_LIMIT]
+    print(f"{heading} - {len(hits)} people:")
+    for p in shown:
+        print(f"  - {label(p)} - {describe(p)}")
+    if len(hits) > len(shown):
+        print(f"  ... and {len(hits) - len(shown)} more")
+
+
+def field_hits(people, query, field):
+    q = fold(query)
+    return [p for p in people if q in fold(p.get(field) or "")]
+
+
+def subtree_size(name, reports):
+    return sum(1 + subtree_size(k["name"], reports) for k in reports.get(name, []))
+
+
+TREE_LIMIT = 200
+
+
+def print_tree(name, reports, depth=0, limit=TREE_LIMIT):
+    for k in reports.get(name, []):
+        if limit <= 0:
+            return limit
+        print("  " * depth + f"- {label(k)} - {describe(k)}")
+        limit = print_tree(k["name"], reports, depth + 1, limit - 1)
+    return limit
+
+
+def main():
+    ap = argparse.ArgumentParser(add_help=True)
+    ap.add_argument("query", nargs="*", help="person name, full or partial")
+    ap.add_argument("--dept", help="list everyone in a department")
+    ap.add_argument("--tree", help="print the reporting subtree beneath a person")
+    ap.add_argument("--chain", help="print the management chain above a person")
+    ap.add_argument("--team", help="everyone whose chat team matches (best effort)")
+    ap.add_argument("--title", help="everyone whose job title matches")
+    ap.add_argument("--stats", action="store_true", help="departments and headcount")
+    args = ap.parse_args()
+
+    data, people, by_name, reports = load()
+
+    # The committed file starts as an empty placeholder so the skill can land
+    # before the first sync. Say so plainly: otherwise every query returns
+    # "no match" and reads like the person does not exist.
+    if not people:
+        print("The org chart has not been synced yet - the data file is an empty placeholder.")
+        print("Populate it with `who_is.py --import people.csv` or the company's sync process, and")
+        print("opens a pull request; nothing can be looked up until that merges.")
+        return
+
+    stamp = f"{data.get('count', len(people))} people, updated {data.get('updated', 'unknown')}"
+
+    if args.stats:
+        counts = {}
+        for p in people:
+            counts[p.get("department") or "(none)"] = counts.get(p.get("department") or "(none)", 0) + 1
+        print(stamp)
+        for dept, n in sorted(counts.items(), key=lambda kv: -kv[1]):
+            print(f"  {n:>3}  {dept}")
+        return
+
+    if args.title:
+        hits = field_hits(people, args.title, "title")
+        if not hits:
+            print(f"No job title matching '{args.title}'.")
+            return
+        print_group(f'Job title containing "{args.title}"', hits)
+        return
+
+    if args.team:
+        hits = field_hits(people, args.team, "slack_team")
+        if not hits:
+            teams = sorted({p["slack_team"] for p in people if p.get("slack_team")})
+            print(f"No chat team matching '{args.team}'. Known teams:")
+            for t in teams:
+                print(f"  - {t}")
+            return
+        teams = sorted({p.get("slack_team") for p in hits if p.get("slack_team")})
+        print_group(f'Chat team "{", ".join(teams)}"', hits)
+        print("\nBest effort: teams come from free-text chat profile titles, not the HR system.")
+        return
+
+    if args.dept:
+        hits = field_hits(people, args.dept, "department")
+        if not hits:
+            depts = sorted({p.get("department") or "(none)" for p in people})
+            print(f"No department matching '{args.dept}'. Known departments:")
+            for d in depts:
+                print(f"  - {d}")
+            return
+        depts = sorted({p.get("department") for p in hits if p.get("department")})
+        print_group(f'Department "{", ".join(depts) or args.dept}"', hits)
+        return
+
+    target = args.tree or args.chain or " ".join(args.query)
+    if not target:
+        ap.print_help()
+        return
+
+    hits, also = find_people(people, target)
+    if not hits:
+        # Not a person. Search every other field and report all of them: a bare
+        # query like "data" can legitimately be a department and a chat team at
+        # once, and showing only the first would hide the rest.
+        def values(hits, field):
+            return ", ".join(sorted({p[field] for p in hits if p.get(field)}))
+
+        dept = field_hits(people, target, "department")
+        team = field_hits(people, target, "slack_team")
+        title = field_hits(people, target, "title")
+        groups = []
+        if dept:
+            groups.append(("department", f'Department: {values(dept, "department")}', dept))
+        if team:
+            groups.append(("Chat team", f'Chat team: {values(team, "slack_team")}', team))
+        if title:
+            groups.append(("job title", f'Job title matching "{target}"', title))
+
+        if groups:
+            where = ", ".join(w for w, _, _ in groups[:-1])
+            where = f"{where} and {groups[-1][0]}" if where else groups[-1][0]
+            print(f"'{target}' is not a person. Matched on {where}.\n")
+            for i, (_, heading, hits) in enumerate(groups):
+                if i:
+                    print()
+                print_group(heading, hits)
+            if title:
+                print("\nA team lead usually carries the team name in their title, so --tree")
+                print("on a name above gives that whole team.")
+            return
+
+        print(f"No match for '{target}' as a person, department, chat team, or job "
+              f"title ({stamp}).")
+        print("Not necessarily an error: could be a contractor, a new joiner ahead of")
+        print("the weekly sync, someone outside the company, or a team or area - neither is")
+        print("in the data. Try --stats for the department list, or --tree with a lead's")
+        print("name.")
+        return
+    if len(hits) > 1:
+        print(f"{len(hits)} matches for '{target}':")
+        for p in sorted(hits, key=lambda p: p["name"]):
+            print(f"  - {label(p)} - {describe(p)}")
+        return
+
+    p = hits[0]
+    if args.tree:
+        print(f"{label(p)} - {describe(p)}")
+        total = subtree_size(p["name"], reports)
+        print(f"({total} people beneath)")
+        remaining = print_tree(p["name"], reports, 1)
+        if remaining <= 0:
+            print(f"\n... output stopped at {TREE_LIMIT} lines of {total}. Narrow the")
+            print("query with --tree on someone further down.")
+    elif args.chain:
+        for i, c in enumerate(chain_of(p, by_name)):
+            print("  " * i + f"- {label(c)} - {describe(c)}")
+    else:
+        print_card(p, by_name, reports)
+        if also:
+            print()
+            print(f"  Careful: {len(also)} other person(s) also match '{target}'. This is an")
+            print("  exact hit, but confirm it is who you meant:")
+            for o in sorted(also, key=lambda x: x["name"]):
+                print(f"    - {label(o)} - {describe(o)}")
+
+
+if __name__ == "__main__":
+    main()
