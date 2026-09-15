@@ -2,6 +2,17 @@
 
 This file defines the conventions for adding and maintaining content in this workspace. Both humans and Claude should follow these rules. The `review-workspace` agent audits against these conventions.
 
+## The example company
+
+The content in this template is an example company - Dunder Mifflin, a regional paper distributor - so a reader can see what a finished workspace looks like before running `/setup-workspace` replaces it with their own. It is written **played straight**: every file reads the way a real regional paper distributor would write it for its own Claude workspace. Terse, structured, factual.
+
+The rule for anyone editing it: **if a line would not appear in a real company's `CLAUDE.md`, it does not appear here.** No jokes, no winks, no quotes from the show in agent context. Where the example is funny, it is funny because a reader recognizes the company and because a terminology rule is stated as plain fact, not because the file is performing.
+
+Two constraints that follow from it:
+
+- **Fictional entities only.** Competitors are the category "big-box office retailers" plus named fictional ones. Clients are fictional counties, school districts, and hospital systems. Never name a real company, in any file.
+- **Conventions apply in full.** The example content is held to every rule in this file - maintenance headers, the standard `CLAUDE.md` sections, the context index, sentence-case headings, metrics with an "as of" date. An example that cuts corners teaches the corners.
+
 ## Directory structure conventions
 
 ### Top-level layout
