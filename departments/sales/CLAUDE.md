@@ -12,7 +12,7 @@ which live in the team folders.
 | Director of Sales Operations | 1 | Vice President, Northeast Sales |
 | Regional Manager | 2 | Vice President, Northeast Sales |
 | Assistant to the Regional Manager | 1 | Regional Manager, Scranton |
-| Sales Representative | 11 | Their Regional Manager |
+| Sales Representative | 10 | Their Regional Manager |
 | Traveling Sales Representative | 2 | Vice President, Northeast Sales |
 
 Counts are as of August 2026. Names and reporting lines come from the `who-is`

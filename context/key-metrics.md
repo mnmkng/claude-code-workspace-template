@@ -20,8 +20,11 @@ this table, with its as-of date attached.
 - **Cite the figure and its date together.** "Client retention is 91% (as of
   August 2026)." A number without a date reads as current forever, and these
   numbers move every month.
-- **Do not restate a figure in another file.** Link here instead. Two copies
-  diverge inside one quarter and nobody notices which one is stale.
+- **Cite, do not copy.** A department `CLAUDE.md` may carry a scorecard of the
+  metrics it owns, and a file may quote a figure in an argument - always with
+  the as-of date, which is what makes a stale copy visible. What no other file
+  does is become a second source: when a figure here changes, the citation
+  changes with it, and a citation without a date is the bug.
 - **Do not compute a new headline number from these.** Ratios of ratios go
   wrong quietly. If a number is needed often enough to matter, it gets its own
   row here, sourced.
@@ -73,7 +76,7 @@ this table, with its as-of date attached.
 | Metric | Value | As of | Source |
 |---|---|---|---|
 | Headcount, both branches and corporate | 40 | August 2026 | The HR system |
-| Sales representatives, Scranton | 8 | August 2026 | The HR system |
+| Sales representatives, Scranton | 7 | August 2026 | The HR system |
 | Sales representatives, Utica | 4 | August 2026 | The HR system |
 | Voluntary attrition, trailing 12 months | 7% | August 2026 | The HR system |
 

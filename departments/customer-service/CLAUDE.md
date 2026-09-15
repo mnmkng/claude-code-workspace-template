@@ -13,16 +13,16 @@ two, which is deliberate: see the service model in `context/customers.md`.
 | Role | Count | Reports to |
 |------|-------|------------|
 | Customer Service Manager | 1 | Regional Manager, Scranton |
-| Customer Service Representative | 2 | Customer Service Manager |
+| Customer Service Representative | 1 | Customer Service Manager |
 | Office Administrator | 1 | Regional Manager, Scranton |
 
 Counts are as of August 2026. The Office Administrator sits with this team but
 reports to the regional manager, because the role covers the whole branch rather
 than the service queue.
 
-[TODO: record the Utica arrangement, where customer service is covered by a
-representative who reports to the Utica regional manager, and the phone coverage
-hours for both branches.]
+[TODO: record the Utica arrangement - the branch has no resident customer
+service and is covered from Scranton - and the phone coverage hours for both
+branches.]
 
 ## Key metrics
 

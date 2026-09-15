@@ -10,7 +10,7 @@ restated here.
 |------|-------|------------|
 | Regional Manager | 1 | Vice President, Northeast Sales |
 | Assistant to the Regional Manager | 1 | Regional Manager |
-| Sales Representative | 7 | Regional Manager |
+| Sales Representative | 6 | Regional Manager |
 
 Counts are as of August 2026.
 
@@ -55,8 +55,8 @@ to be skipped. New-account performance tracks it directly.
   warehouses roughly 600 stock-keeping units, so a trial can usually go out next
   day, and it is the single most effective closing move available here.
 - **Coordinate with the warehouse before promising an expedited delivery.**
-  Same-day capacity is a shared constraint across all seven representatives, not
-  a per-representative allowance.
+  Same-day capacity is one constraint shared across all seven books of accounts
+  on this team, not a per-representative allowance.
 - **The bid calendar is branch-level.** County and district bid dates are
   tracked by the regional manager. A representative who finds a bid date puts it
   on that calendar the same day.
