@@ -147,10 +147,7 @@ The file is generated. Its `note` field names the source systems and the sync
 date; `updated` is the date of the last data *change*. Two ways to keep it
 current:
 
-- **Import an export from the HR system.** `who_is.py --import people.csv`
-  reads a CSV with the columns `name, title, department, manager, nickname,
-  team` (the last two optional) and rewrites the data file. Commit the result
-  through a pull request like any other change.
+- **Import an export from the HR system** with `--import`, below.
 - **Automate it.** A scheduled job that pulls from the HR system and the chat
   tool, compares against the committed copy ignoring the timestamp, and opens a
   pull request when something changed. Keep `main` protected so nothing lands
@@ -158,6 +155,39 @@ current:
 
 Wrong data belongs fixed in the source system, or in the chat tool for a
 nickname or team. Edits to this file are overwritten by the next sync.
+
+## Importing
+
+```bash
+python3 .claude/skills/who-is/scripts/who_is.py --import people.csv
+```
+
+Reads a CSV and rewrites `references/org-chart.json` whole. Columns:
+
+| Column | Required | Becomes |
+|---|---|---|
+| `name` | Yes | `name`. Must be unique: the reporting tree is keyed on it |
+| `title` | Yes (may be empty) | `title` |
+| `department` | Yes (may be empty) | `department` |
+| `manager` | Yes (may be empty) | `manager`. Empty means this person is a root |
+| `nickname` | No | `nickname`, kept only when it differs from `name` |
+| `team` | No | `slack_team` |
+
+Any other column is ignored, so an HR export can be handed over unedited.
+
+The import refuses, and writes nothing, when a `manager` is not the `name` of
+someone else in the file, when two rows share a name, when a row has no name,
+or when nobody is left without a manager (a tree with no top). It reports every
+problem at once, with row numbers, so one re-export fixes all of them. Fix the
+data in the HR system and re-export rather than editing the CSV, or the same
+problems come back next time.
+
+The file is replaced, not merged: the export is the source of truth, and a
+merge would keep people who have left. `source` becomes `import:<filename>`
+and `updated` today's date. Commit the result through a pull request like any
+other change, and set the `owner` in the sibling card
+`references/org-chart.md` to whoever runs the import - by default it names the
+person who owned the example data, which is not who runs yours.
 
 This is directory data - name, title, department, manager, chat handle - and the
 data-sensitivity rule allows it in the internal workspace only. Do not publish
