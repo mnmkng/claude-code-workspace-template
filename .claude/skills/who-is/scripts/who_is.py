@@ -7,13 +7,14 @@ only where it differs from the formal name. The "manager" field is what encodes
 the reporting tree.
 
 It does not contain team or area. The HR system may keep both, as sub-department
-and area, but the the HR system API exposes neither, so a team cannot be looked up by
-name - resolve it through its lead's subtree with --tree instead.
+and area, but its API exposes neither, so a team cannot be looked up by name -
+resolve it through its lead's subtree with --tree instead.
 
 Matching is accent- and case-insensitive and covers the nickname as well as the
-formal name, so "Dusan Antos" finds "Óscar Martínez" and "Ondra" finds
-"Ondřej Urban". That is the point: the caller usually does not know the correct
-spelling or which form the person goes by, which is why they are looking it up.
+formal name, so "Oscar Martinez" finds "Óscar Martínez" and "Hide" finds
+"Hidetoshi Hasagawa". That is the point: the caller usually does not know the
+correct spelling or which form the person goes by, which is why they are looking
+it up.
 
 Usage:
     who_is.py <query>            person lookup; partial names and nicknames work
@@ -129,7 +130,7 @@ def find_people(people, query):
     """Three tiers, most precise first.
 
     The token tier matters more than it looks: a caller who types a nickname plus
-    a real surname ("Ondra Urban" for "Ondřej Urban") misses both the exact and
+    a real surname ("Jim Halpert" for "James Halpert") misses both the exact and
     substring tiers, but still matches on the surname token.
     """
     q = fold(query)

@@ -12,6 +12,7 @@ Two constraints that follow from it:
 
 - **Fictional entities only.** Competitors are the category "big-box office retailers" plus named fictional ones. Clients are fictional counties, school districts, and hospital systems. Never name a real company, in any file.
 - **Conventions apply in full.** The example content is held to every rule in this file - maintenance headers, the standard `CLAUDE.md` sections, the context index, sentence-case headings, metrics with an "as of" date. An example that cuts corners teaches the corners.
+- **The maintenance headers are specimens, and so are their values.** Every field on the example content is fabricated in the same way its metrics are: `owner` names someone from the example org chart, `sources` names systems that do not exist, and `verified_at` carries the date the example was written. They exist to show a contributor what a filled-in header looks like, not to assert that a person checked anything - there is nothing to check a fiction against. `.claude/rules/workspace-edits.md` forbids an agent setting `verified_at` on its own; that rule governs files that describe reality, and it binds in full the moment `/setup-workspace` replaces this content with a company's own. Until then, whoever rewrites an example context file dates its header to the day they wrote it.
 
 ## Directory structure conventions
 
