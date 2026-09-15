@@ -22,8 +22,9 @@ Figures cited here come from `context/key-metrics.md` with their as-of dates.
 | Regional hospitals | $80K-$500K | 18% | Supply chain manager, group purchasing agreement | Quarterly schedule, strict on substitutions |
 
 Named clients are never written into committed files. Sales work references
-accounts by account ID; see `.claude/rules/client-identifiers.md` under
-`departments/sales/`.
+accounts by account ID; see
+`departments/sales/.claude/rules/client-identifiers.md`, which is scoped to the
+sales department folder.
 
 ### Small business
 

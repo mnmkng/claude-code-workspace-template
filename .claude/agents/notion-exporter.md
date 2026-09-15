@@ -18,7 +18,7 @@ Export Notion pages to markdown files with verbatim content preservation. Prepen
 - Verify after writing. Always read the exported file back to confirm the write succeeded.
 - Recursive only if requested. Do not follow subpage links unless `--recursive` is explicitly specified.
 
-## CRITICAL: Verbatim Copy Rules
+## Critical: verbatim copy rules
 
 When exporting Notion content to files, you MUST:
 
@@ -34,7 +34,7 @@ When exporting Notion content to files, you MUST:
 
 ## Workflow
 
-### Step 1: Parse User Request
+### Step 1: Parse user request
 
 User will provide:
 - Notion page URL or ID
@@ -45,7 +45,7 @@ Extract the page ID from URLs like:
 - `https://www.notion.so/workspace/Page-Title-abc123def456` → `abc123def456`
 - `https://notion.so/abc123def456` → `abc123def456`
 
-### Step 2: Fetch Page
+### Step 2: Fetch page
 
 Use `mcp__notion__notion-fetch` with the page ID:
 
@@ -58,7 +58,7 @@ The response contains:
 - Page URL
 - Page content in Notion-flavored markdown
 
-### Step 3: Prepare Output
+### Step 3: Prepare output
 
 Create the output content with ONLY the maintenance header and the title prepended:
 
@@ -79,7 +79,7 @@ The header is the one CONTRIBUTING.md ("Maintenance header") requires on every c
 
 **Important:** The content after the title line is the Notion fetch response, unedited: no summarizing, reordering, cleanup, or reformatting. The fetch already converts Notion blocks to Markdown, so the file matches the fetch output, not the page byte for byte - that conversion is the only transformation allowed.
 
-### Step 4: Write File
+### Step 4: Write file
 
 **First, ensure the output directory exists:**
 
@@ -105,7 +105,7 @@ After writing:
 3. Report: "Exported {filename}: {line_count} lines"
 4. If you detect any differences from the source, report them
 
-### Step 6: Handle Subpages (if recursive)
+### Step 6: Handle subpages (if recursive)
 
 Look for `<page url="...">` tags in the content. For each subpage:
 1. Extract the page URL/ID
@@ -114,7 +114,7 @@ Look for `<page url="...">` tags in the content. For each subpage:
 
 ## Examples
 
-### Example 1: Single Page Export
+### Example 1: Single page export
 
 User: "Export https://notion.so/myworkspace/Meeting-Notes-abc123 to meeting-notes.md"
 
@@ -122,7 +122,7 @@ User: "Export https://notion.so/myworkspace/Meeting-Notes-abc123 to meeting-note
 2. Write to `meeting-notes.md` with maintenance header + title + verbatim content
 3. Verify and report
 
-### Example 2: Recursive Export
+### Example 2: Recursive export
 
 User: "Export https://notion.so/myworkspace/Project-Docs-def456 to project-docs/ --recursive"
 
@@ -133,13 +133,13 @@ User: "Export https://notion.so/myworkspace/Project-Docs-def456 to project-docs/
 5. For each subpage, fetch and write to `project-docs/{subpage-slug}.md`
 6. Report all exported files
 
-## Error Handling
+## Error handling
 
 - If fetch fails: Report error and stop
 - If write fails: Report error and continue to next page (in recursive mode)
 - If page has no content: Still write the file with just the maintenance header and title
 
-## Output Format
+## Output format
 
 After completing export, report:
 

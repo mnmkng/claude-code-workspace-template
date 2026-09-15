@@ -56,7 +56,7 @@ folders.
 4. Get the named approval before the quote leaves. An unapproved quote in a
    client's hands is a price we have offered.
 5. Deal desk review if the quote trips any of the six conditions in
-   `context/pricing-and-discounts.md`. Two business days.
+   `departments/sales/context/pricing-and-discounts.md`. Two business days.
 6. Trial delivery where the client will take one. It is where most deals are
    actually decided.
 
@@ -97,7 +97,7 @@ staying on the account.
 | Infinity | Client ordering, contract pricing, order history | Representatives see what the client sees |
 | The BI tool | Order and delivery dashboards, Infinity adoption | Read-only for the branch |
 | The product catalog | Stock codes, packaging, availability | Source of the list prices in the pricing file |
-| `client-quote` skill | Computing a quote and its approver from the tier table | Reads `context/pricing-and-discounts.md` directly |
+| `client-quote` skill | Computing a quote and its approver from the tier table | Reads `departments/sales/context/pricing-and-discounts.md` directly |
 | `cold-call-prep` skill | Building a call brief from an account ID | |
 | `deal-desk-reviewer` agent | Checking a proposed discount against the rules before submitting | Advisory; it does not approve |
 
@@ -112,4 +112,4 @@ staying on the account.
 
 | Topic | Key content | File path |
 |---|---|---|
-| Pricing and discounts | List price structure, volume tiers, discount authority, margin floors, the deal desk rule | `context/pricing-and-discounts.md` |
+| Pricing and discounts | List price structure, volume tiers, discount authority, margin floors, the deal desk rule | `departments/sales/context/pricing-and-discounts.md` |

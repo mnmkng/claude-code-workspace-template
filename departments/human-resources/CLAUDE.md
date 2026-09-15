@@ -53,9 +53,11 @@ arrangement, if any.]
 
 ## Data sensitivity
 
-Employee personal information - contact details, compensation, performance,
-health, and personal circumstances - never enters this repo, in any file, in any
-folder. Directory data (name, job title, department, manager, chat display name)
-is allowed and lives in the `who-is` skill's data file. The line is in
-`.claude/rules/data-sensitivity.md` and this department is the one most likely
-to be asked to cross it.
+The line between employee personal information and directory data is drawn in
+`.claude/rules/data-sensitivity.md`, which is always loaded. This department is
+the one most likely to be asked to cross it, and the one holding the systems
+that make crossing it easy.
+
+The allowed directory data lives in the `who-is` skill's data file. Nothing on
+the other side of that line belongs anywhere in this repo, in any file, in any
+folder.

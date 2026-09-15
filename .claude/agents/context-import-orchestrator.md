@@ -13,7 +13,7 @@ Orchestrate batch context imports from multiple source files. Spawn context-extr
 
 ## Workflow
 
-### On First Run (No Pending Review File)
+### On first run (no pending review file)
 
 ```
 1. SCAN: List all importable files in current directory
@@ -25,7 +25,7 @@ Orchestrate batch context imports from multiple source files. Spawn context-extr
 7. NOTIFY: Tell user the review file is ready and what to do next
 ```
 
-### On Resume (Pending Review File Exists)
+### On resume (pending review file exists)
 
 ```
 1. DETECT: Find most recent review file with status != "applied"
@@ -36,7 +36,7 @@ Orchestrate batch context imports from multiple source files. Spawn context-extr
 6. UPDATE: Change review file status to "applied"
 ```
 
-## Step 1: Check for Pending Review
+## Step 1: Check for pending review
 
 First, check if there's a pending review file in the current directory:
 
@@ -49,7 +49,7 @@ If found, read it and check the `status` field in YAML frontmatter:
 - `approved` or `partial` → Process the approved items.
 - `applied` → Already processed. Continue to scan for new files.
 
-## Step 2: Scan and Analyze Files
+## Step 2: Scan and analyze files
 
 For each importable file (markdown, images, PDFs) in the current directory:
 
@@ -70,7 +70,7 @@ For each importable file (markdown, images, PDFs) in the current directory:
    - Content dates: "as of", "updated", "current"
    - Default to "unknown" if not determinable
 
-## Step 3: Extract Content
+## Step 3: Extract content
 
 For each file, spawn a context-extractor agent:
 
@@ -85,7 +85,7 @@ Prompt: "Read {filename} and extract content. Return:
 Do NOT make any edits. Just analyze and return structured findings."
 ```
 
-## Step 4: Generate Review File
+## Step 4: Generate review file
 
 Create `./import-review-{timestamp}.md` with this structure:
 
@@ -113,7 +113,7 @@ changes:
     status: null
 ---
 
-# Context Import Review
+# Context import review
 
 Generated: {timestamp}
 Files to import: {count}
@@ -138,7 +138,7 @@ Files to import: {count}
 
 ---
 
-## Data Sensitivity Flags
+## Data sensitivity flags
 
 {For each sensitivity flag}
 
@@ -151,7 +151,7 @@ Files to import: {count}
 
 ---
 
-## Terminology Fixes
+## Terminology fixes
 
 {For each terminology issue}
 
@@ -163,7 +163,7 @@ Files to import: {count}
 
 ---
 
-## Proposed Changes
+## Proposed changes
 
 {For each proposed change}
 
@@ -179,7 +179,7 @@ Files to import: {count}
 ---
 ```
 
-## Step 5: Apply Approved Changes
+## Step 5: Apply approved changes
 
 When processing an approved review file:
 
@@ -206,7 +206,7 @@ After applying all approved changes:
 1. Update review file status to `applied`
 2. Report summary: X changes applied, Y skipped, Z files processed
 
-## Important Rules
+## Important rules
 
 - **Never auto-approve**: All changes require user review
 - **Preserve user edits**: If user modified a diff block, use their version
@@ -214,7 +214,7 @@ After applying all approved changes:
 - **Idempotent**: Running twice with same approved file should be safe
 - **Older files first**: Process in recency order so newer content wins conflicts
 
-## Error Handling
+## Error handling
 
 - If YAML parsing fails: Report error, ask user to fix syntax
 - If target file doesn't exist: Skip change, log warning

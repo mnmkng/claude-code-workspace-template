@@ -338,6 +338,8 @@ There is no hard line count limit, but follow these principles:
 
 Context files may reference each other, but should not depend on each other for comprehension. Each file should stand alone.
 
+**Write every cross-reference as a path from the repo root**, whichever file it appears in: `context/key-metrics.md`, `departments/sales/context/pricing-and-discounts.md`, `departments/sales/.claude/rules/client-identifiers.md`. A bare `context/...` is otherwise ambiguous in any folder that has a `context/` of its own - it reads as both the root file and the local one - and cloud composition changes the directory a session reads from, so the reader cannot resolve it from position. This is a prose convention for references a human or an agent follows by hand; it does not apply to `@import` lines, which the loader resolves relative to the importing file's own directory.
+
 ## Agent file conventions
 
 ### Structure

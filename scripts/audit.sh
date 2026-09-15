@@ -89,13 +89,10 @@ if [[ ! -d "departments" ]]; then
         "Create departments/ directory and move department folders into it."
 fi
 
-# .mcp.json is gitignored, check existence separately
-if [[ ! -f ".mcp.json" ]]; then
-    finding "Warning" "Missing .mcp.json at repo root" ".mcp.json" \
-        ".mcp.json not found at repo root." \
-        "Directory structure > MCP configuration" \
-        "Create .mcp.json at repo root with \${VAR} expansion for secrets."
-fi
+# No MCP configuration check: the personal MCP config file is gitignored and
+# never committed (CONTRIBUTING.md > "MCP configuration"), so its absence at
+# the repo root is the expected state and not a finding. A tracked copy is
+# caught by security-lint, not by this script.
 
 # --- 2. Department/team directories must have CLAUDE.md ---
 # Check direct children of departments/ (these are departments)
@@ -134,10 +131,10 @@ fi
 while IFS= read -r f; do
     f="${f#./}"
     case "$f" in
-        CLAUDE.md|CLAUDE.local.example.md|CONTRIBUTING.md|README.md) ;;
+        CLAUDE.md|CLAUDE.local.md|CLAUDE.local.example.md|CONTRIBUTING.md|README.md) ;;
         *)
             finding "Info" "Unexpected root-level .md file: $f" "$f" \
-                "Root-level .md file beyond CLAUDE.md, CLAUDE.local.example.md, README.md." \
+                "Root-level .md file beyond CLAUDE.md, CLAUDE.local.md, CLAUDE.local.example.md, CONTRIBUTING.md, README.md." \
                 "Directory structure > Files at root level" \
                 "Move to context/ (if cross-functional) or a department folder (if department-specific)."
             ;;

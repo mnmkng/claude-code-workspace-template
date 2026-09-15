@@ -71,8 +71,8 @@ receiving check and to quality assurance if stock was rejected on inspection.
 ### Expense reports
 
 Submitted monthly, reimbursed with the following month's payroll run. Checked
-against `context/expense-policy.md` before approval. Use the
-`expense-report-check` skill rather than reading the policy each time.
+against `departments/accounting/context/expense-policy.md` before approval. Use
+the `expense-report-check` skill rather than reading the policy each time.
 
 Nearly a fifth of reports come back for correction, almost always for a missing
 receipt or a meal over the limit. That number is a target, not a fact of life.
@@ -91,10 +91,10 @@ the sales department's pricing file for the margin floors.
 | The BI tool | Margin by line, receivables aging, close dashboards | Read-only |
 | The CRM | Account terms, contract pricing, the owning representative | Read-only for accounting |
 | The HR system | Payroll input, headcount | Corporate finance only |
-| `expense-report-check` skill | Checking a submitted report against the policy | Reads `context/expense-policy.md` |
+| `expense-report-check` skill | Checking a submitted report against the policy | Reads `departments/accounting/context/expense-policy.md` |
 
 ## Context index
 
 | Topic | Key content | File path |
 |---|---|---|
-| Expense policy | Categories, limits, approval chain, receipts, reimbursement cadence, what is never reimbursed | `context/expense-policy.md` |
+| Expense policy | Categories, limits, approval chain, receipts, reimbursement cadence, what is never reimbursed | `departments/accounting/context/expense-policy.md` |

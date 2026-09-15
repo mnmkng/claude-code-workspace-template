@@ -19,6 +19,35 @@ addition to the coordination role, and holds discount authority one step above a
 representative. The title is written in full; it is not "Assistant Regional
 Manager".
 
+## Key metrics
+
+The team is measured on the department's metrics, not on a separate branch set.
+Branch revenue for Scranton and the four strategic KPIs are in
+`context/key-metrics.md`, each with its own as-of date; cite from there rather
+than restating a figure here.
+
+[TODO: if the branch starts tracking a team-level number the department does not
+already own - call-block adherence and trial-delivery conversion are the two
+candidates - record it here with its source and as-of date.]
+
+## Processes
+
+The sales process, pricing, discount authority, and the approval chain are the
+department's and are documented in `departments/sales/CLAUDE.md` and
+`departments/sales/context/pricing-and-discounts.md`. Nothing about them changes
+at the branch level.
+
+What is branch-specific is in `Cadence` and `Local practice` below: the
+protected call block, the bid-calendar handoff, the trial-delivery motion, and
+the Utica handoff rule.
+
+## Tools and systems
+
+[TODO: list the systems this team touches day to day and note anything
+configured differently from the rest of the department. The CRM and Infinity are
+department-wide; the branch-specific pieces are likely the bid calendar and the
+warehouse capacity check named under `Local practice`.]
+
 ## Territory
 
 Lackawanna County and the surrounding delivery radius: roughly 45 minutes'
