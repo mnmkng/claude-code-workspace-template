@@ -2,7 +2,7 @@
 sources:
   - "HR system: name, job title, department, manager - exported by the org chart sync (or by hand with who_is.py --import)"
   - "Chat tool: display name as nickname, team from the text after @ in the profile title"
-owner: TODO-workspace-owner
+owner: Holly Flax
 edit: upstream
 review_every: 30d
 files:

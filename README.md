@@ -93,7 +93,7 @@ On the web you drive everything through Claude. To check the setup, ask Claude t
 | a deleted skill is still listed | re-compose is additive | Ask Claude to run `reset` |
 | `sandbox NOT enabled` / no deny rules | security config is degraded | Restore `.claude/settings.json` from git |
 
-`audit.sh` warns that the example company's `CLAUDE.md` is stale. That is expected until `/setup-workspace` replaces it.
+`audit.sh` computes freshness from git dates, so a fresh clone reports every file as fresh no matter how old the content is. Treat that column as meaningful only once the workspace carries your own history; the `verified_at` dates checked by `tools/maintenance/check.py` are the real freshness signal.
 
 ## git and gh
 

@@ -2,6 +2,18 @@
 
 This file defines the conventions for adding and maintaining content in this workspace. Both humans and Claude should follow these rules. The `review-workspace` agent audits against these conventions.
 
+## The example company
+
+The content in this template is an example company - Dunder Mifflin, a regional paper distributor - so a reader can see what a finished workspace looks like before running `/setup-workspace` replaces it with their own. It is written **played straight**: every file reads the way a real regional paper distributor would write it for its own Claude workspace. Terse, structured, factual.
+
+The rule for anyone editing it: **if a line would not appear in a real company's `CLAUDE.md`, it does not appear here.** No jokes, no winks, no quotes from the show in agent context. Where the example is funny, it is funny because a reader recognizes the company and because a terminology rule is stated as plain fact, not because the file is performing.
+
+Two constraints that follow from it:
+
+- **Fictional entities only.** Competitors are the category "big-box office retailers" plus named fictional ones. Clients are fictional counties, school districts, and hospital systems. Never name a real company, in any file.
+- **Conventions apply in full.** The example content is held to every rule in this file - maintenance headers, the standard `CLAUDE.md` sections, the context index, sentence-case headings, metrics with an "as of" date. An example that cuts corners teaches the corners.
+- **The maintenance headers are specimens, and so are their values.** Every field on the example content is fabricated in the same way its metrics are: `owner` names someone from the example org chart, `sources` names systems that do not exist, and `verified_at` carries the date the example was written. They exist to show a contributor what a filled-in header looks like, not to assert that a person checked anything - there is nothing to check a fiction against. `.claude/rules/workspace-edits.md` forbids an agent setting `verified_at` on its own; that rule governs files that describe reality, and it binds in full the moment `/setup-workspace` replaces this content with a company's own. Until then, whoever rewrites an example context file dates its header to the day they wrote it.
+
 ## Directory structure conventions
 
 ### Top-level layout
@@ -325,6 +337,8 @@ There is no hard line count limit, but follow these principles:
 ### Cross-references
 
 Context files may reference each other, but should not depend on each other for comprehension. Each file should stand alone.
+
+**Write every cross-reference as a path from the repo root**, whichever file it appears in: `context/key-metrics.md`, `departments/sales/context/pricing-and-discounts.md`, `departments/sales/.claude/rules/client-identifiers.md`. A bare `context/...` is otherwise ambiguous in any folder that has a `context/` of its own - it reads as both the root file and the local one - and cloud composition changes the directory a session reads from, so the reader cannot resolve it from position. This is a prose convention for references a human or an agent follows by hand; it does not apply to `@import` lines, which the loader resolves relative to the importing file's own directory.
 
 ## Agent file conventions
 

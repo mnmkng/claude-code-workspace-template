@@ -1,8 +1,310 @@
 {
   "note": "Generated file, do not hand-edit; the next sync overwrites it. Source: the HR system (name, job title, department, manager) and the chat tool (nickname from display name, slack_team parsed from the text after \"@\" in the profile title, both best effort). Populate it with `who_is.py --import people.csv` or a scheduled sync that opens a pull request when the data changes; \"updated\" is the date of the last data change, not the last run. Fix data in the source systems, not here. Query it with the who-is skill rather than reading it whole. Directory data: internal workspace only, never publish.",
-  "source": "not yet populated",
-  "updated": "not yet populated",
-  "count": 0,
+  "source": "example data",
+  "updated": "2026-09-15",
+  "count": 42,
   "people": [
+    {
+      "name": "Alan Brand",
+      "title": "Chief Executive Officer",
+      "department": "Corporate",
+      "slack_team": "Corporate Executive"
+    },
+    {
+      "name": "David Wallace",
+      "title": "Chief Financial Officer",
+      "department": "Corporate",
+      "slack_team": "Corporate Finance"
+    },
+    {
+      "name": "Jan Levinson",
+      "title": "Vice President, Northeast Sales",
+      "department": "Corporate",
+      "manager": "Alan Brand",
+      "slack_team": "Corporate Executive"
+    },
+    {
+      "name": "Charles Miner",
+      "title": "Director of Sales Operations",
+      "department": "Sales",
+      "manager": "Jan Levinson",
+      "slack_team": "Corporate Executive"
+    },
+    {
+      "name": "Holly Flax",
+      "title": "Director of Human Resources",
+      "department": "Human Resources",
+      "manager": "David Wallace",
+      "slack_team": "Corporate HR"
+    },
+    {
+      "name": "Troy Underbridge",
+      "title": "Financial Analyst",
+      "department": "Accounting",
+      "manager": "David Wallace",
+      "slack_team": "Corporate Finance"
+    },
+    {
+      "name": "Gabe Lewis",
+      "title": "Corporate Projects Manager",
+      "department": "Corporate",
+      "manager": "Jan Levinson"
+    },
+    {
+      "name": "Dwight K. Schrute",
+      "nickname": "Dwight",
+      "title": "Regional Manager",
+      "department": "Sales",
+      "manager": "Jan Levinson",
+      "slack_team": "Scranton Sales"
+    },
+    {
+      "name": "James Halpert",
+      "nickname": "Jim",
+      "title": "Assistant to the Regional Manager",
+      "department": "Sales",
+      "manager": "Dwight K. Schrute",
+      "slack_team": "Scranton Sales"
+    },
+    {
+      "name": "Phyllis Lapin-Vance",
+      "nickname": "Phyllis",
+      "title": "Sales Representative",
+      "department": "Sales",
+      "manager": "Dwight K. Schrute",
+      "slack_team": "Scranton Sales"
+    },
+    {
+      "name": "Stanley Hudson",
+      "title": "Sales Representative",
+      "department": "Sales",
+      "manager": "Dwight K. Schrute",
+      "slack_team": "Scranton Sales"
+    },
+    {
+      "name": "Andrew Bernard",
+      "nickname": "Andy",
+      "title": "Sales Representative",
+      "department": "Sales",
+      "manager": "Dwight K. Schrute",
+      "slack_team": "Scranton Sales"
+    },
+    {
+      "name": "Ryan Bailey Howard",
+      "nickname": "Ryan",
+      "title": "Sales Representative",
+      "department": "Sales",
+      "manager": "Dwight K. Schrute",
+      "slack_team": "Scranton Sales"
+    },
+    {
+      "name": "Clark Green",
+      "title": "Sales Representative",
+      "department": "Sales",
+      "manager": "Dwight K. Schrute",
+      "slack_team": "Scranton Sales"
+    },
+    {
+      "name": "Pete Miller",
+      "title": "Sales Representative",
+      "department": "Sales",
+      "manager": "Dwight K. Schrute",
+      "slack_team": "Scranton Sales"
+    },
+    {
+      "name": "Todd Packer",
+      "title": "Traveling Sales Representative",
+      "department": "Sales",
+      "manager": "Jan Levinson"
+    },
+    {
+      "name": "Daniel Cordray",
+      "nickname": "Danny",
+      "title": "Traveling Sales Representative",
+      "department": "Sales",
+      "manager": "Jan Levinson"
+    },
+    {
+      "name": "Pamela Beesly",
+      "nickname": "Pam",
+      "title": "Office Administrator",
+      "department": "Customer Service",
+      "manager": "Dwight K. Schrute",
+      "slack_team": "Scranton Branch"
+    },
+    {
+      "name": "Kelly Kapoor",
+      "title": "Customer Service Manager",
+      "department": "Customer Service",
+      "manager": "Dwight K. Schrute",
+      "slack_team": "Scranton Customer Service"
+    },
+    {
+      "name": "Kelly Erin Hannon",
+      "nickname": "Erin",
+      "title": "Customer Service Representative",
+      "department": "Customer Service",
+      "manager": "Kelly Kapoor",
+      "slack_team": "Scranton Customer Service"
+    },
+    {
+      "name": "Angela Martin",
+      "title": "Senior Accountant",
+      "department": "Accounting",
+      "manager": "Dwight K. Schrute",
+      "slack_team": "Scranton Accounting"
+    },
+    {
+      "name": "Óscar Martínez",
+      "nickname": "Oscar",
+      "title": "Accountant",
+      "department": "Accounting",
+      "manager": "Angela Martin",
+      "slack_team": "Scranton Accounting"
+    },
+    {
+      "name": "Kevin Malone",
+      "nickname": "Kev",
+      "title": "Accountant",
+      "department": "Accounting",
+      "manager": "Angela Martin",
+      "slack_team": "Scranton Accounting"
+    },
+    {
+      "name": "Toby Flenderson",
+      "title": "Human Resources Representative",
+      "department": "Human Resources",
+      "manager": "Holly Flax",
+      "slack_team": "Scranton Branch"
+    },
+    {
+      "name": "Creed Bratton",
+      "title": "Quality Assurance Director",
+      "department": "Quality Assurance",
+      "manager": "Dwight K. Schrute"
+    },
+    {
+      "name": "Meredith Palmer",
+      "title": "Supplier Relations Representative",
+      "department": "Quality Assurance",
+      "manager": "Creed Bratton",
+      "slack_team": "Scranton Branch"
+    },
+    {
+      "name": "Darryl Philbin",
+      "title": "Warehouse Manager",
+      "department": "Warehouse",
+      "manager": "Dwight K. Schrute",
+      "slack_team": "Scranton Warehouse"
+    },
+    {
+      "name": "Valerie Johnson",
+      "nickname": "Val",
+      "title": "Warehouse Foreman",
+      "department": "Warehouse",
+      "manager": "Darryl Philbin",
+      "slack_team": "Scranton Warehouse"
+    },
+    {
+      "name": "Roy Anderson",
+      "title": "Warehouse Associate",
+      "department": "Warehouse",
+      "manager": "Valerie Johnson",
+      "slack_team": "Scranton Warehouse"
+    },
+    {
+      "name": "Lonny Collins",
+      "title": "Warehouse Associate",
+      "department": "Warehouse",
+      "manager": "Valerie Johnson",
+      "slack_team": "Scranton Warehouse"
+    },
+    {
+      "name": "Margaret Madsen",
+      "nickname": "Madge",
+      "title": "Warehouse Associate",
+      "department": "Warehouse",
+      "manager": "Valerie Johnson",
+      "slack_team": "Scranton Warehouse"
+    },
+    {
+      "name": "Hidetoshi Hasagawa",
+      "nickname": "Hide",
+      "title": "Warehouse Associate",
+      "department": "Warehouse",
+      "manager": "Valerie Johnson",
+      "slack_team": "Scranton Warehouse"
+    },
+    {
+      "name": "Nathan Nickerson",
+      "nickname": "Nate",
+      "title": "Warehouse Associate",
+      "department": "Warehouse",
+      "manager": "Valerie Johnson",
+      "slack_team": "Scranton Warehouse"
+    },
+    {
+      "name": "Glenn Prescott",
+      "title": "Warehouse Associate",
+      "department": "Warehouse",
+      "manager": "Valerie Johnson",
+      "slack_team": "Scranton Warehouse"
+    },
+    {
+      "name": "Karen Filippelli",
+      "title": "Regional Manager",
+      "department": "Sales",
+      "manager": "Jan Levinson",
+      "slack_team": "Utica Sales"
+    },
+    {
+      "name": "Hannah Smoterich-Barr",
+      "title": "Sales Representative",
+      "department": "Sales",
+      "manager": "Karen Filippelli",
+      "slack_team": "Utica Sales"
+    },
+    {
+      "name": "Tony Gardner",
+      "title": "Sales Representative",
+      "department": "Sales",
+      "manager": "Karen Filippelli",
+      "slack_team": "Utica Sales"
+    },
+    {
+      "name": "Martin Nash",
+      "title": "Sales Representative",
+      "department": "Sales",
+      "manager": "Karen Filippelli",
+      "slack_team": "Utica Sales"
+    },
+    {
+      "name": "Kevin Doyle",
+      "title": "Sales Representative",
+      "department": "Sales",
+      "manager": "Karen Filippelli",
+      "slack_team": "Utica Sales"
+    },
+    {
+      "name": "Angela Ruiz",
+      "title": "Accounts Receivable Clerk",
+      "department": "Accounting",
+      "manager": "Karen Filippelli",
+      "slack_team": "Utica Branch"
+    },
+    {
+      "name": "Jim Foley",
+      "title": "Warehouse Foreman",
+      "department": "Warehouse",
+      "manager": "Karen Filippelli",
+      "slack_team": "Utica Warehouse"
+    },
+    {
+      "name": "Roy Weber",
+      "title": "Warehouse Associate",
+      "department": "Warehouse",
+      "manager": "Jim Foley",
+      "slack_team": "Utica Warehouse"
+    }
   ]
 }
