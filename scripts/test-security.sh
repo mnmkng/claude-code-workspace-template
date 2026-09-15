@@ -109,10 +109,10 @@ cases = [
     # #141: team-folder copies of settings.json are generator-owned and must
     # be exactly as edit-protected as the root file (the */ globs are
     # position-independent, so these should already match - lock it in).
-    ("BLOCK edit team-folder settings",     "BLOCK", {"tool_name":"Edit","tool_input":{"file_path":"/example/workspace/departments/marketing/.claude/settings.json"}}),
+    ("BLOCK edit team-folder settings",     "BLOCK", {"tool_name":"Edit","tool_input":{"file_path":"/example/workspace/departments/sales/.claude/settings.json"}}),
     ("BLOCK write nested team settings",    "BLOCK", {"tool_name":"Write","tool_input":{"file_path":"/example/workspace/departments/customer-success/teams/expansion/.claude/settings.json"}}),
-    ("BLOCK cp onto team settings",         "BLOCK", {"tool_name":"Bash","tool_input":{"command":"cp evil.json departments/marketing/" + ".claude/settings.json"}}),
-    ("BLOCK redirect into team settings",   "BLOCK", {"tool_name":"Bash","tool_input":{"command":"echo x > departments/marketing/" + ".claude/settings.json"}}),
+    ("BLOCK cp onto team settings",         "BLOCK", {"tool_name":"Bash","tool_input":{"command":"cp evil.json departments/sales/" + ".claude/settings.json"}}),
+    ("BLOCK redirect into team settings",   "BLOCK", {"tool_name":"Bash","tool_input":{"command":"echo x > departments/sales/" + ".claude/settings.json"}}),
     ("BLOCK bash dangerouslyDisableSandbox","BLOCK", {"tool_name":"Bash","tool_input":{"command":"echo X " + "--danger" + "ouslyDisableSandbox"}}),
     ("BLOCK bash skip-permissions",         "BLOCK", {"tool_name":"Bash","tool_input":{"command":"echo X " + "--" + "dangerously-skip-permissions"}}),
     ("BLOCK bash redirect into settings",   "BLOCK", {"tool_name":"Bash","tool_input":{"command":"cat /dev/null > " + ".claude/settings.json"}}),
@@ -121,7 +121,7 @@ cases = [
     # Negative cases (should NOT block)
     ("PASS edit data-sensitivity.md",       "PASS",  {"tool_name":"Edit","tool_input":{"file_path":"/example/workspace/.claude/rules/data-sensitivity.md"}}),
     ("PASS edit scripts/audit.sh",          "PASS",  {"tool_name":"Edit","tool_input":{"file_path":"/example/workspace/scripts/audit.sh"}}),
-    ("PASS edit department CLAUDE.md",      "PASS",  {"tool_name":"Edit","tool_input":{"file_path":"/example/workspace/departments/marketing/CLAUDE.md"}}),
+    ("PASS edit department CLAUDE.md",      "PASS",  {"tool_name":"Edit","tool_input":{"file_path":"/example/workspace/departments/sales/CLAUDE.md"}}),
     ("PASS bash ls",                        "PASS",  {"tool_name":"Bash","tool_input":{"command":"ls -la"}}),
     ("PASS webfetch any url",               "PASS",  {"tool_name":"WebFetch","tool_input":{"url":"https://example.com"}}),
     # #47 chunk A: protect the personal/team context file and the bootstrap
@@ -462,9 +462,9 @@ fi
 # User mode anchored at a stamped team folder = silent (issue #141: the
 # stamped settings.json emits its own banner; the user-scope hook must not
 # contradict it with NOT DETECTED)
-if out=$(cd "$WORKSPACE_ROOT/departments/marketing" 2>/dev/null && \
+if out=$(cd "$WORKSPACE_ROOT/departments/sales" 2>/dev/null && \
          env -u CLAUDE_WORKSPACE_ROOT \
-         CLAUDE_PROJECT_DIR="$WORKSPACE_ROOT/departments/marketing" \
+         CLAUDE_PROJECT_DIR="$WORKSPACE_ROOT/departments/sales" \
          bash "$WORKSPACE_ROOT/.claude/hooks/status-banner.sh" user 2>&1) \
     && [ -z "$out" ]; then
   tick "status-banner user mode silent at a stamped team folder (issue #141)"
@@ -474,7 +474,7 @@ else
 fi
 
 # User mode inside the workspace without env var = NOT DETECTED JSON
-if out=$(cd "$WORKSPACE_ROOT/departments/marketing" 2>/dev/null && \
+if out=$(cd "$WORKSPACE_ROOT/departments/sales" 2>/dev/null && \
          unset CLAUDE_WORKSPACE_ROOT; unset CLAUDE_PROJECT_DIR; \
          bash "$WORKSPACE_ROOT/.claude/hooks/status-banner.sh" user 2>&1) \
     && echo "$out" | /usr/bin/python3 -m json.tool > /dev/null 2>&1 \
@@ -568,12 +568,12 @@ else
   cross "settings-sync --check failed - run 'python3 tools/bootstrap/bootstrap.py settings-sync' and commit"
 fi
 
-STAMP="$WORKSPACE_ROOT/departments/marketing/.claude/settings.json"
+STAMP="$WORKSPACE_ROOT/departments/sales/.claude/settings.json"
 
 if [ -f "$STAMP" ] && /usr/bin/python3 - "$STAMP" "$WORKSPACE_ROOT" <<'PY'
 import json, subprocess, sys
 stamp_path, workspace_root = sys.argv[1], sys.argv[2]
-team_dir = workspace_root + "/departments/marketing"
+team_dir = workspace_root + "/departments/sales"
 stamp = json.load(open(stamp_path))
 
 def sh(cmd, project_dir, stdin=""):
@@ -636,7 +636,7 @@ PY
 then
   tick "stamped team settings: banner + PreToolUse wrapper behave (ACTIVE/enforce/fail-closed)"
 else
-  cross "stamped team settings misbehave (see above; is departments/marketing/.claude/settings.json stamped?)"
+  cross "stamped team settings misbehave (see above; is departments/sales/.claude/settings.json stamped?)"
 fi
 
 # ---------------------------------------------------------------------------
