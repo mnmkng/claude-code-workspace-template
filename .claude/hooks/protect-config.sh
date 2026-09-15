@@ -69,7 +69,7 @@ case "$tool_name" in
         ;;
     esac
 
-    # ---- Denied-command guard (issue #57) ----------------------------------
+    # ---- Denied-command guard ----------------------------------
     # The permissions.deny / sandbox excludedCommands matchers in settings.json
     # only see the PREFIX of the command string, so a denied command wrapped in
     # a multi-statement script (e.g. `X=1; git clone ...`) or hidden behind a
@@ -82,7 +82,7 @@ case "$tool_name" in
     #   ASK verbs (git clone/fetch/pull, force-push) are allowed to run, but
     #   only at the literal start of a single, unprefixed statement so the
     #   "ask" matcher can prompt; wrapped or hidden forms are blocked and must
-    #   be re-issued as a standalone command. One carve-out (issue #174):
+    #   be re-issued as a standalone command. One carve-out:
     #   git fetch from a trusted remote is exempt from the visible-position
     #   rule, because it reaches no new host and writes nothing outside .git.
     #   See is_safe_fetch below.

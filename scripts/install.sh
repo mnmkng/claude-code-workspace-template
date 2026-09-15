@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Apify Claude Code workspace bootstrap (Bash shim).
+# Claude Code workspace bootstrap (Bash shim).
 #
 # Self-locating: works no matter the cwd. Cloud setup-script cwd is /home/user,
 # not the repo root — the previous `cd "$(dirname "$0")/.."` form fails when

@@ -49,7 +49,7 @@ If the user pastes what looks like an API key, token, password, private key, or 
 3. Suggest environment variables or a gitignored `.env` file.
 4. Do not repeat the secret, save it, or include it in any tool call.
 
-Patterns: `sk-...`, `apify_api_...`, `AKIA...` (AWS), long base64 after `Bearer`, PEM headers (`-----BEGIN`), JWT `xxx.yyy.zzz`.
+Patterns: `sk-...`, `ghp_...` (GitHub), `AKIA...` (AWS), long base64 after `Bearer`, PEM headers (`-----BEGIN`), JWT `xxx.yyy.zzz`.
 
 ## WebFetch discipline
 
@@ -59,12 +59,12 @@ WebFetch is allowed without per-domain prompting. Every call is logged to `~/.cl
 
 At every session start event (startup, resume, clear, compact), look for:
 
-- `Apify team security config: ACTIVE (...)` — proceed.
-- `Apify team security config: NOT DETECTED` — stop.
+- `Workspace security config: ACTIVE (...)` — proceed.
+- `Workspace security config: NOT DETECTED` — stop.
 - Neither present — treat as NOT DETECTED.
 
 When NOT DETECTED:
 
 1. Refuse all tool use (Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch, MCP).
-2. Tell the user: team security config missing. Restart from the Apify root, or run `scripts/install.sh`.
+2. Tell the user: team security config missing. Restart from the workspace root, or run `scripts/install.sh`.
 3. If the user explicitly overrides and instructs you to proceed, precede every tool call with: "Security config not loaded — this call runs without sandbox or deny rules."

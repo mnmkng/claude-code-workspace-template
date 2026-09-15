@@ -104,7 +104,7 @@ jobs:
               sys.exit(1)
           PY
 
-      - name: Team-folder settings stamps in sync (issue #141)
+      - name: Team-folder settings stamps in sync
         run: |
           set -e
           python3 tools/bootstrap/bootstrap.py settings-sync --check
@@ -130,8 +130,8 @@ jobs:
               missing = {"~/.ssh/**", "~/.aws/**", "**/.env", "**/.mcp.json"} - deny_read
               if missing:
                   problems.append(f"{f}: sandbox.filesystem.denyRead missing {sorted(missing)}")
-              if not s.get("env", {}).get("APIFY_TEAM_POLICY_VERSION"):
-                  problems.append(f"{f}: env.APIFY_TEAM_POLICY_VERSION missing")
+              if not s.get("env", {}).get("WORKSPACE_TEAM_POLICY_VERSION"):
+                  problems.append(f"{f}: env.WORKSPACE_TEAM_POLICY_VERSION missing")
               if s.get("enableAllProjectMcpServers") or s.get("enabledMcpjsonServers"):
                   problems.append(f"{f}: MCP keys must not be present in team copies")
           if problems:
@@ -183,7 +183,7 @@ jobs:
           python3 <<'PY'
           import os, re, subprocess, sys
           tracked = subprocess.run(["git", "ls-files"], capture_output=True, text=True).stdout.splitlines()
-          # Broken @import lines load silently with no error (see #41 Q2), so a
+          # Broken @import lines load silently with no error, so a
           # typo or rename is invisible at runtime. Verify every whole-line
           # @import in a committed CLAUDE.md resolves, relative to that file's
           # own directory. Targets that are intentionally absent and gitignored
@@ -209,6 +209,6 @@ jobs:
           if problems:
               for p in problems:
                   print(f"::error::{p}")
-              print("::error::broken @import lines fail silently at load time (see #41 Q2); fix the path or gitignore the target")
+              print("::error::broken @import lines fail silently at load time; fix the path or gitignore the target")
               sys.exit(1)
           PY

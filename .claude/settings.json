@@ -6,26 +6,6 @@
     "allow": [
       "WebFetch",
       "WebSearch",
-
-      "mcp__claude_ai_Apify__search-actors",
-      "mcp__claude_ai_Apify__fetch-actor-details",
-      "mcp__claude_ai_Apify__fetch-apify-docs",
-      "mcp__claude_ai_Apify__search-apify-docs",
-      "mcp__claude_ai_Apify__get-actor-output",
-      "mcp__claude_ai_Apify__get-actor-run",
-      "mcp__claude_ai_Apify__apify--rag-web-browser",
-
-      "mcp__claude_ai_Notion__notion-fetch",
-      "mcp__claude_ai_Notion__notion-search",
-
-      "mcp__redash__execute_adhoc_query",
-      "mcp__redash__execute_query",
-      "mcp__redash__get_query",
-      "mcp__redash__list_queries",
-      "mcp__redash__list_data_sources",
-      "mcp__redash__create_query",
-      "mcp__redash__update_query",
-
       "Bash(ls:*)",
       "Bash(find:*)",
       "Bash(grep:*)",
@@ -41,9 +21,6 @@
       "Bash(xargs:*)",
       "Bash(shasum:*)",
       "Bash(npm run:*)",
-      "Bash(vale:*)",
-      "Bash(brew list:*)",
-
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git mv:*)",
@@ -261,7 +238,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${APIFY_CLAUDE_CODE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/.claude/hooks/protect-config.sh"
+            "command": "\"${CLAUDE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/.claude/hooks/protect-config.sh"
           }
         ]
       },
@@ -270,7 +247,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${APIFY_CLAUDE_CODE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/.claude/hooks/protect-config.sh"
+            "command": "\"${CLAUDE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/.claude/hooks/protect-config.sh"
           }
         ]
       },
@@ -279,7 +256,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${APIFY_CLAUDE_CODE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/.claude/hooks/webfetch-audit.sh"
+            "command": "\"${CLAUDE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/.claude/hooks/webfetch-audit.sh"
           }
         ]
       }
@@ -290,7 +267,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${APIFY_CLAUDE_CODE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/.claude/hooks/status-banner.sh team"
+            "command": "\"${CLAUDE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/.claude/hooks/status-banner.sh team"
           }
         ]
       },
@@ -299,15 +276,10 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if [ \"$CLAUDE_CODE_REMOTE\" = \"true\" ]; then python3 \"${APIFY_CLAUDE_CODE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/tools/bootstrap/bootstrap.py cloud --apply-only >/dev/null 2>&1 || true; fi"
+            "command": "if [ \"$CLAUDE_CODE_REMOTE\" = \"true\" ]; then python3 \"${CLAUDE_WORKSPACE_ROOT:-$CLAUDE_PROJECT_DIR}\"/tools/bootstrap/bootstrap.py cloud --apply-only >/dev/null 2>&1 || true; fi"
           }
         ]
       }
     ]
-  },
-
-  "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "redash"
-  ]
+  }
 }
