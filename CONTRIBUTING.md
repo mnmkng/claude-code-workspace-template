@@ -16,8 +16,10 @@ The repo root must contain:
 - `departments/` - All department and team folders
 - `context/` - Cross-functional knowledge files
 - `scripts/` - Workspace tooling scripts
+- `tools/` - Python tooling: the bootstrap (`tools/bootstrap/`) and the maintenance checker (`tools/maintenance/`)
 - `docs-for-humans/` - Human-only docs and step-by-step tutorials for workspace-wide workflows (teams add their own `docs-for-humans/` for team-specific human docs)
-- `.mcp.json` - MCP server configuration, local and gitignored (see MCP section below)
+
+Two more files may sit at the root but are personal and gitignored, never tracked: `CLAUDE.local.md` (your preferences) and `.mcp.json` (your MCP server configuration, see the MCP section below).
 
 ### Department and team folders
 
@@ -69,11 +71,96 @@ The repo is primarily **agent context** - files Claude loads to do work. Keep tw
 
 1. **Repo is SSOT.** The owning team works through agent sessions in this repo, so edits land in git. The content lives in `context/` (or a skill's references) and is indexed like any agent context. External copies (e.g. Notion pages) are reduced to banners pointing here. Examples: a legal team's contract playbook, a services team's renewal playbook, a sales team's deal taxonomy.
 2. **External SSOT + pointer.** Humans edit in an external system (e.g. Notion) and agents need the content rarely. Agent context keeps a link, a fetch instruction, and an "as of" stamp - never a copy. Unmarked copies drift: a committed copy and its source diverge within weeks, and the committed one goes stale silently.
-3. **External SSOT + marked mirror.** The `who-is` org chart at `.claude/skills/who-is/references/org-chart.json` is the reference implementation: synced from the HR system and the chat tool by a job that opens a PR when the data changes. Follow its header format for new mirrors; each mirror needs its own sync process. Humans edit externally but agents need the content often enough that fetching every time is wasteful, so a sync process mirrors the content into the repo on a cadence. Mirror files carry a header marking them generated: source URL(s), sync date, and "do not hand-edit". An agent that spots an error in a mirror proposes the fix in the external source - it never edits the mirror, otherwise mirrors become forks. The hard part is that Notion and this repo are not 1:1: one repo file can distill several Notion pages and vice versa, so the sync needs an explicit source mapping and, for non-verbatim cases, an agent-mediated transform rather than a mechanical copy (`notion-exporter` covers only one-off verbatim exports today).
+3. **External SSOT + copy.** Humans edit externally but agents need the content often enough that fetching every time is wasteful, so a copy lives in the repo and its [maintenance header](#maintenance-header) says `edit: upstream`. An agent that spots an error proposes the fix in the external source and re-syncs; it never patches the copy, otherwise copies become forks. The copy may be verbatim or an agent-mediated distillation: Notion and this repo are not 1:1, so one repo file can distill several pages and vice versa. Each copy brings its own sync - a sync job, an Action, an export agent, or a person re-pasting on change - and its `sources` entry names it.
 
-**Sensitivity override**, on top of all three patterns: named counterparties, deal specifics, and anything failing `.claude/rules/data-sensitivity.md` never enters the repo, even via a mirror. The repo holds the anonymized position; the external system holds specifics.
+**Sensitivity override**, on top of all three patterns: named counterparties, deal specifics, and anything failing `.claude/rules/data-sensitivity.md` never enters the repo, even via a copy. The repo holds the anonymized position; the external system holds specifics.
 
 This rule is transitional: placement is expected to migrate toward repo-SSOT as teams adopt agent workflows. Keying on where edits land lets that happen team by team, without rewriting this rule.
+
+### Maintenance header
+
+Every context file is compiled from somewhere - Notion, the HR system, the data warehouse, a Slack channel, a colleague's head - and some are verbatim copies that must be fixed at the source. A reader, human or agent, needs the same facts at the top of every file: where it comes from, who answers for it, whether edits belong here or upstream, and when it was last checked. The maintenance header is YAML frontmatter that states them:
+
+```yaml
+---
+sources:
+  - "Notion: Sales playbook 2026, https://www.notion.so/..."
+  - "HubSpot: closed-lost reason field"
+owner: Angela Martin
+edit: here
+review_every: 90d
+verified_at: 2026-09-10
+---
+# File title
+```
+
+#### Fields
+
+| Field | Status | What it says |
+|---|---|---|
+| `edit` | required | Where a correction goes. `here`: the file is authored, edits land in git. `upstream`: a process produces the file from its sources, so fix the source and re-run the process, never patch the copy. Decision rule below |
+| `review_every` | required | How often someone re-checks the file against its sources: `30d`, `90d`, `180d`. On a card for synced data, the longest gap between data changes that is normal, not how often the sync runs (see "Data files") |
+| `sources` | recommended; required when `edit: upstream` | Where the content comes from: systems, pages, people, with URLs where they exist. One entry per source. Name the system, not a snapshot: dates belong in `verified_at`. On `edit: upstream`, also name the tool or agent that writes the file, if one does |
+| `owner` | recommended | Who answers for the file, by name as it appears in the org chart. The lint warns when the name is not someone who works here |
+| `verified_at` | recommended | When a person last confirmed the content against its sources, `YYYY-MM-DD`. Touching this field is the act of verification; an edit, an import, or a rewrite is not one. An agent sets it only when the user says they verified the content, with one exception: an export that writes an `edit: upstream` file whole from its source records the export date |
+| `files` | cards only | Data files this Markdown file speaks for, as paths relative to it (see "Data files" below) |
+
+The lint warns about a missing recommended field and, in `--strict` mode, fails on it. The header is one flat mapping of scalars and lists, nothing nested; quote any value that contains ` #` or `: ` or ends in `:`, because YAML would read a comment or a nested key, and the lint rejects the unquoted form rather than guess.
+
+#### Which files carry one
+
+- **Every tracked `.md` under a `context/`, `references/`, or `agent-references/` directory.** A new file always has one.
+- **Exempt: `CLAUDE.md`** - an index and crossroads, always loaded; its owner is CODEOWNERS and its freshness is git. Department `CLAUDE.md` files still hold content of their own (team structure, metrics, processes); their freshness expectation is the 30-day and 90-day table under "Freshness expectations", not a header.
+- **Exempt: `README.md` and `docs-for-humans/`** - human docs, not agent context.
+- **Exempt: `SKILL.md`, agents, and rules** - they keep their own frontmatter and carry no maintenance header. A skill's data files are covered by cards (below).
+- **Existing files without a header keep working until someone edits them.** Headers are written by people who know the file, never generated: a skeleton header nobody wrote is a header nobody maintains. So a file with no header is a lint warning across the tree and a lint error on any file a PR touches. Every edit is the moment the header gets written, and an editor who does not know the sources or owner asks the folder's CODEOWNER.
+
+#### Data files
+
+`.json`, `.csv`, `.html`, and `.xlsx` files cannot carry a header, and nothing is ever forced into them: a sync writes the data it writes and touches nothing else. A **sibling Markdown card** carries the header on the data file's behalf:
+
+- One card per data file, or per group of files that share one source. Name it after the file: `org-chart.md` beside `org-chart.json`.
+- The card lists the files it speaks for under `files:`, as paths relative to itself. Every data file must be claimed by exactly one card.
+- The card's header describes the **data**, not the skill or folder around it: `sources` is where the data comes from, `review_every` is how often the data should be refreshed, `owner` is who runs the refresh.
+- The card's body says what the data is and how to use it, or points to the `SKILL.md` that does. The `SKILL.md` or context index that uses the data links the card, like any other context file: an unlinked card is an orphan.
+- **Synced data needs no `verified_at`.** On a card with `edit: upstream` and no `verified_at`, the newest commit that changed *only* the card's files is the verification: a sync commit touches the data and nothing else, and is by construction a check against the source. A hand edit or a refactor that also touched other files does not count, and a card whose files have never landed alone is reported unverified. This derivation exists because a data file cannot carry a date; a synced Markdown file can, and its exporter writes the export date into `verified_at` itself.
+- **`review_every` on a card is the longest gap between data changes that is normal**, not the sync's run cadence. A sync that finds nothing new leaves no commit, so git can tell you the data has not changed in N days; it cannot tell you the sync stopped running. When the files go longer than `review_every` without a sync commit, the lint reports the card stale, meaning "look at the sync". Whether the sync is alive is the sync's own job to report (the sync tool's run history, a workflow's status), not the header's.
+
+```yaml
+---
+sources:
+  - "the HR system: name, job title, department, manager - exported weekly by the org chart sync"
+  - "Slack: display name as nickname, team from the profile title"
+owner: Zoë Müller
+edit: upstream
+review_every: 30d
+files:
+  - org-chart.json
+---
+# Org chart data
+```
+
+#### Choosing `edit`
+
+The number of sources is irrelevant; what matters is whether a *process* owns the file. Ask: could someone regenerate this file from its sources without reading the current version? If yes, it is `upstream` - a sync, an export, a re-paste, or a fixed agent prompt produces it, so a hand edit is either overwritten on the next run or, if nobody re-runs it, forks the copy from its source. A verbatim copy is always `upstream`, even one somebody pasted once by hand, because "re-paste from the source" is its process. If regenerating the file would take judgment - choosing what to include, summarizing, reconciling sources, adding advice - it is `here`: someone authored it, and when a source changes, someone has to think about how the file changes. A hand-written summary of one Notion page is `here`; a digest an agent rebuilds from six policies on demand is `upstream`. Mixed files (an authored playbook with one pasted table) are `here`, with where the pasted table came from listed in `sources`.
+
+What the flag asks of a reader who finds an error: on `upstream`, fix the source, then re-run the process, and never edit the file itself. On `here`, fix the file in a PR, and if you checked its facts against the sources while you were there, set `verified_at` to today.
+
+On `upstream`, each `sources` entry says where the content lives and, when a tool or agent writes the file, which one: "the HR system - exported weekly by the org chart sync", "Notion page X, exported by <agent name>". When no tool is named, the `owner` refreshes the file by hand: "Slack #finances, request threads, re-summarized by hand". The person never goes into `sources`; that is what `owner` is for. An `upstream` file must name its `sources`; the lint treats a copy without a source as an error.
+
+#### Copies keep no frontmatter of their own
+
+A page fetched from a docs site or exported from Notion arrives with its own `title`/`url` block; the maintenance header replaces it and `sources` names the live URL. A sync process that writes Markdown emits the header as part of the file, with `verified_at` set to the export date, and the lint fails when one drops it. A sync that writes data files emits only the data; the card is hand-written once.
+
+#### The lint
+
+`python3 tools/maintenance/check.py` enforces all of this; the `maintenance-lint` workflow runs it on every PR with `--changed-since` set to the base branch.
+
+- **Errors** (fail the check): a file the PR touches with no header; a malformed header; an unknown key; a bad `edit` or `review_every`; `edit: upstream` without `sources`; a data file no card claims, or two cards claim; a card pointing at a file git does not track.
+- **Warnings** (printed, not failing): a file the PR does not touch with no header; a missing `sources`, `owner`, or `verified_at`; an owner not in the org chart; a stale file, meaning `verified_at` (or, for synced content, the last sync commit) plus `review_every` is in the past.
+- **Modes**: `--changed-since <ref>` is what CI runs on a PR, with the base branch as `<ref>`; files count as touched when they differ from the merge base of `<ref>` and `HEAD`, so commits that landed on the base branch after the PR branched are not blamed on the PR; `--strict` turns every warning into an error; `--report` prints a freshness table, one row per file, with files that have no header listed as `no header`; `--verbose` lists the files behind each summary line.
+
+What the header does not do: it does not say the content is correct, only when someone last said so. And it cannot stop a sync from overwriting a hand edit - that is what `edit: upstream` is warning you about.
 
 ### Cloud composition and the rules it requires
 
@@ -110,6 +197,8 @@ The root `settings.json` is the **single source of truth** for security policy. 
 
 Team-level `.claude/` may additionally carry `agents/`, `commands/`, `rules/`, `hooks/`, and `skills/` (all composed per the section above; the stamped `settings.json` is never composed to the root).
 
+A third derivative exists outside the repo: the cloud bootstrap writes a copy of the root policy, rendered from `origin/main`, to the workspace clone's parent directory so multi-repo cloud sessions load it (see [how-it-works](docs-for-humans/how-it-works.md#multi-repo-cloud-sessions)). It is generated by `tools/bootstrap/parent_settings.py`, never committed, and never hand-edited; changing the root policy is enough.
+
 ### Protected files
 
 The following files cannot be edited by Claude (enforced by `.claude/hooks/protect-config.sh` returning exit code 2, backed by `permissions.deny` entries in `.claude/settings.json`):
@@ -131,14 +220,7 @@ The same paths are also guarded against Bash shell redirection (`>`, `>>`) in th
 
 ### MCP configuration
 
-Put `.mcp.json` at the **repo root**. This is where Claude Code looks for it.
-
-It is **local and gitignored** - `security-lint` fails the build if one is committed at any depth, and the sandbox denies Claude read access to it. Each person creates their own:
-- Use `${VAR}` expansion syntax for tokens and credentials
-- **Store actual secrets in `.env`** (gitignored) or system environment variables
-- Claude Code expands `${VAR}` at runtime from the environment
-
-Document which MCP servers the team uses, and the shape of the config, in `README.md` or `docs-for-humans/` - never commit the file itself.
+`.mcp.json` is personal and gitignored, never committed (`security-lint` fails the build on a tracked copy). If you use one, put it at the repo root, reference tokens with `${VAR}` expansion, and keep the values in environment variables or a gitignored `.env`.
 
 ### Knowledge hierarchy depth
 
@@ -232,6 +314,7 @@ There is no hard line count limit, but follow these principles:
 
 ### Conventions
 
+- Every file carries the [maintenance header](#maintenance-header) ahead of its H1 (existing files gain one when next edited)
 - One file per major knowledge domain: `customers.md`, `competition.md`, `product.md`, `gtm.md`
 - Each file should be self-contained: readable without other context files
 - Use descriptive H2/H3 headers that tell Claude exactly what's inside
@@ -369,13 +452,13 @@ Every piece of knowledge must have exactly one authoritative location. For most 
 - Constraints/rules: `.claude/rules/`
 - Personal preferences: user's own CLAUDE.md (gitignored)
 
-The authoritative location may also be **external** (e.g. a Notion page) when the owning team's edits land there - see [Agent context vs human docs](#agent-context-vs-human-docs). The repo then holds either a pointer or a marked mirror, and the external system is the SSOT.
+The authoritative location may also be **external** (e.g. a Notion page) when the owning team's edits land there - see [Agent context vs human docs](#agent-context-vs-human-docs). The repo then holds either a pointer or a copy with `edit: upstream` in its header, and the external system is the SSOT.
 
-Cross-references are fine. Duplication is not. A marked mirror (generated header with source URL, sync date, and "do not hand-edit") is not duplication - it is a visible cache of an external SSOT. An unmarked copy is duplication.
+Cross-references are fine. Duplication is not. A copy whose [maintenance header](#maintenance-header) says `edit: upstream` is not duplication - it is a visible cache of an external SSOT. A copy without one is.
 
 ### Heading hierarchy
 
-- H1 (#): One per file, at the top (the file title)
+- H1 (#): One per file, at the top (the file title); when the file has a maintenance header, the H1 follows it
 - H2 (##): Major sections
 - H3 (###): Sub-sections within H2s
 - H4+ (####): Use sparingly. If you need H4+, consider whether the content should be in a separate file.
@@ -411,14 +494,12 @@ Mark incomplete sections with `[TODO: description]` or `[TODO]`:
 
 ## Freshness expectations
 
-Content types and their expected review cadences:
+Each context file states its own cadence in `review_every`, and `verified_at` records when someone last checked it against its sources. A file is stale when `verified_at` plus `review_every` is in the past; `python3 tools/maintenance/check.py --report` lists every file's status. Defaults when adding a file:
 
-| Content type | Staleness threshold | Rationale |
+| Content type | `review_every` | Rationale |
 |---|---|---|
-| Root CLAUDE.md, Context Index | 30 days | Central navigation; errors compound quickly |
-| Team structure, headcount | 90 days | Growing startup; reorgs and hiring happen fast |
-| Strategy, competitive, pricing | 90 days | High change velocity in fast-moving market |
-| Rules, technical docs | 180 days | More stable but need periodic review |
-| Product architecture | 180 days | Evolves with platform changes |
+| Team structure, headcount, strategy, competitive, pricing | 90d | High change velocity in a fast-moving market and a growing startup |
+| Rules, technical docs, skill references, product architecture | 180d | More stable, but they evolve with the platform |
+| Machine-synced data (the org chart) | the longest normal gap between data changes | A sync commit is the verification; an idle sync leaves no trace, so the cadence is about the data, not the runs |
 
-Note: These are guidelines, not hard limits. A file modified 91 days ago isn't "broken", it's "worth reviewing."
+`CLAUDE.md` files carry no header; keep the root one and every context index current within 30 days, since errors in navigation compound quickly. These are guidelines, not hard limits. A stale file isn't "broken", it's "worth reviewing" - and the review is what moves `verified_at`.

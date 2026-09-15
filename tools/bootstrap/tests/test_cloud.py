@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -16,6 +17,13 @@ from lib import manifest as manifest_lib
 from lib import staging
 
 
+def _git(root: Path, *argv):
+    return subprocess.run(
+        ["git", "-C", str(root), "-c", "user.email=t@t", "-c", "user.name=t"] + list(argv),
+        capture_output=True, text=True,
+    )
+
+
 def _make_fake_workspace(root: Path):
     """Create a minimal workspace-root-shaped tree for compose to operate on.
 
@@ -24,6 +32,11 @@ def _make_fake_workspace(root: Path):
         root/.claude/settings.json
         root/departments/foo/CLAUDE.md
         root/departments/foo/.claude/skills/foo-skill/SKILL.md
+
+    The root settings.json is committed and `refs/remotes/origin/main` points
+    at that commit: the parent policy (#195) is rendered from origin/main and
+    fails closed without it. Only the settings file is tracked, so the
+    team-folder stamp check keeps seeing "no targets".
     """
     (root / "CLAUDE.md").write_text("# root\n")
     (root / ".claude").mkdir()
@@ -33,6 +46,10 @@ def _make_fake_workspace(root: Path):
     skill_dir = root / "departments" / "foo" / ".claude" / "skills" / "foo-skill"
     skill_dir.mkdir(parents=True)
     (skill_dir / "SKILL.md").write_text("skill body\n")
+    _git(root, "init", "-q")
+    _git(root, "add", ".claude/settings.json")
+    _git(root, "commit", "-q", "-m", "main")
+    _git(root, "update-ref", "refs/remotes/origin/main", "HEAD")
 
 
 class CloudOrchestrationTests(unittest.TestCase):
@@ -52,6 +69,11 @@ class CloudOrchestrationTests(unittest.TestCase):
         # file is absent unless a test creates it (→ silent no-op by default).
         self.hook_path = Path(self.tmp_hook.name) / "stop-hook-git-check.sh"
         os.environ["WORKSPACE_STOP_HOOK_PATH"] = str(self.hook_path)
+        # Pin the multi-repo parent policy (#195) into a temp dir so the tiers
+        # never write next to the real checkout (or into /tmp itself).
+        self.tmp_parent = tempfile.TemporaryDirectory()
+        os.environ["WORKSPACE_PARENT_SETTINGS_DIR"] = self.tmp_parent.name
+        self.parent_file = Path(self.tmp_parent.name) / ".claude" / "settings.json"
 
         # Pin workspace root detection to our temp workspace.
         self._root_patch = patch(
@@ -70,8 +92,9 @@ class CloudOrchestrationTests(unittest.TestCase):
         self.tmp_root.cleanup()
         self.tmp_stage.cleanup()
         self.tmp_hook.cleanup()
+        self.tmp_parent.cleanup()
         for k in ("WORKSPACE_TEAM", "WORKSPACE_COMPOSED_DIR", "WORKSPACE_PERSONAL_GIST",
-                  "WORKSPACE_STOP_HOOK_PATH"):
+                  "WORKSPACE_STOP_HOOK_PATH", "WORKSPACE_PARENT_SETTINGS_DIR"):
             os.environ.pop(k, None)
 
     # ---- compose-only / default mode ----
@@ -159,6 +182,59 @@ class CloudOrchestrationTests(unittest.TestCase):
         with patch("cloud.personal.sync") as mock_personal:
             cloud.run(argparse.Namespace(compose_only=False, apply_only=False))
         mock_personal.assert_called_once()
+
+    # ---- multi-repo parent policy (#195) ----
+
+    def test_compose_only_writes_parent_policy(self):
+        # Written unconditionally: the snapshot is shared by every later
+        # session in the environment, whatever repos that session attaches.
+        cloud.run(argparse.Namespace(compose_only=True, apply_only=False))
+        self.assertTrue(self.parent_file.is_file())
+        data = json.loads(self.parent_file.read_text())
+        self.assertEqual(data["env"]["CLAUDE_WORKSPACE_ROOT"], str(self.root))
+        for entry in data["hooks"]["PreToolUse"]:
+            self.assertIn(f"d={self.root}", entry["hooks"][0]["command"])
+
+    def test_apply_only_refreshes_drifted_parent_policy(self):
+        cloud.run(argparse.Namespace(compose_only=True, apply_only=False))
+        good = self.parent_file.read_text()
+        # Stale but ours (carries the marker): the apply tier must repair it.
+        self.parent_file.write_text(
+            '{"env": {"WORKSPACE_PARENT_POLICY_VERSION": "0"}, "permissions": {}}\n')
+        with patch("cloud.personal.sync"):
+            cloud.run(argparse.Namespace(compose_only=False, apply_only=True))
+        self.assertEqual(self.parent_file.read_text(), good)
+
+    def test_apply_only_recreates_missing_parent_policy(self):
+        cloud.run(argparse.Namespace(compose_only=True, apply_only=False))
+        self.parent_file.unlink()
+        with patch("cloud.personal.sync"):
+            cloud.run(argparse.Namespace(compose_only=False, apply_only=True))
+        self.assertTrue(self.parent_file.is_file())
+
+    def test_apply_only_upgrades_working_tree_seed_to_main(self):
+        # Setup tier without origin/main (no credentials at snapshot time)
+        # seeds from the working tree; the in-session apply tier, which can
+        # see origin/main, re-renders from it.
+        import parent_settings
+        _git(self.root, "update-ref", "-d", "refs/remotes/origin/main")
+        cloud.run(argparse.Namespace(compose_only=True, apply_only=False))
+        seeded = parent_settings.recorded_source(self.parent_file.read_text())
+        self.assertTrue(seeded.startswith("working-tree@"), seeded)
+        _git(self.root, "update-ref", "refs/remotes/origin/main", "HEAD")
+        with patch("cloud.personal.sync"):
+            cloud.run(argparse.Namespace(compose_only=False, apply_only=True))
+        self.assertEqual(parent_settings.recorded_source(self.parent_file.read_text()),
+                         parent_settings.POLICY_REF)
+
+    def test_parent_policy_failure_is_not_fatal(self):
+        # A parent write failure must never take the session (or setup) down.
+        with patch("cloud.parent_settings.write", side_effect=OSError("read-only")):
+            cloud.run(argparse.Namespace(compose_only=True, apply_only=False))
+            with patch("cloud.personal.sync"):
+                cloud.run(argparse.Namespace(compose_only=False, apply_only=True))
+        log_text = (self.root / cloud.BOOTSTRAP_LOG_REL).read_text()
+        self.assertIn("could not write the parent policy", log_text)
 
     # ---- apply-only mode ----
 

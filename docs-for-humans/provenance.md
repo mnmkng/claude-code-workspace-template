@@ -1,6 +1,6 @@
 # Provenance
 
-This repository is a **snapshot** of the framework layer of Apify's internal Claude Code workspace, cut on September 9, 2026 from commit `cf84749` of that private repository. There is no automatic sync in either direction. It is maintained as time permits; issues and pull requests are welcome and triaged when someone gets to them.
+This repository is a **snapshot** of the framework layer of Apify's internal Claude Code workspace, first cut on September 9, 2026 from commit `cf84749` of that private repository and refreshed on September 15, 2026 from commit `e79a0fd` (which added the maintenance header on context files, its lint under `tools/maintenance/`, and the multi-repo parent policy in the bootstrap). There is no automatic sync in either direction. It is maintained as time permits; issues and pull requests are welcome and triaged when someone gets to them.
 
 Everything below records how the snapshot was produced, so a refresh is an afternoon's work rather than archaeology.
 
@@ -23,7 +23,9 @@ CLAUDE.local.example.md  CONTRIBUTING.md  README.md  .gitignore
 .claude/agents/review-workspace.md  .claude/agents/context-extractor.md
 .claude/agents/context-import-orchestrator.md  .claude/agents/notion-exporter.md
 .claude/skills/who-is/SKILL.md  .claude/skills/who-is/scripts/
+.claude/skills/who-is/references/org-chart.md  (card; the data file is rewritten empty)
 tools/bootstrap/  (minus research/ and __pycache__/)
+tools/maintenance/
 scripts/  .githooks/  .github/
 docs-for-humans/how-it-works.md  docs-for-humans/using-the-cli-locally.md
 docs-for-humans/building-your-team-folder.md
@@ -46,6 +48,8 @@ Mechanical, ordered substitutions applied to every copied text file (this file a
 | `find_apify_root`, `apify_root` identifiers | `find_workspace_root`, `workspace_root` |
 | Repo name and setup-script path | `<your-org>/<your-repo>`, `/home/user/<your-repo>` |
 | Prose: "Apify root", "Apify tree", company name in docstrings and test fixtures | workspace root, workspace tree, generic wording |
+| Real employees named in examples and test fixtures (maintenance-header `owner` examples, lint tests) | Fictional people; the accent-folding tests keep an accented name |
+| The source company's HR vendor and automation tool, by name and URL | "the HR system", "the org chart sync" |
 
 Then a hand pass over prose: README rewritten, CONTRIBUTING examples generalized, `who-is` documentation and script messages made source-system agnostic, the two import agents told to discover the workspace layout at run time instead of from a hardcoded list, CODEOWNERS reduced to `@TODO-` placeholders, the codeowners-fallback workflow made to read its fallback reviewers from the CODEOWNERS default line, private issue references replaced with a sentence of rationale, and the source company's grandfathered paths removed from `.gitignore`.
 

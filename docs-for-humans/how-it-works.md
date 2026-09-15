@@ -22,6 +22,23 @@ The setup tier tees its log to `.claude/.bootstrap-log.txt` (it survives into th
 
 **`reset`** (`python3 tools/bootstrap/bootstrap.py reset [--personal]`) undoes composition: it removes the untracked overlay, the `.git/info/exclude` block, and the team block in `CLAUDE.local.md`. In cloud it cleans the current session's working tree; the next session re-composes from the live checkout. `--personal` also clears the personal-context region.
 
+## Multi-repo cloud sessions
+
+A cloud session can attach more than one repository. The platform clones them as siblings under `/home/user/` and anchors the project root at that parent directory, not at either repo. Root `CLAUDE.md`, rules, root skills, commands, and agents from every attached repo load, but project settings are read only from the primary working directory, so neither repo's `.claude/settings.json` would load there: no deny rules, no hooks, no bootstrap apply tier, and no ACTIVE banner.
+
+The bootstrap closes that gap with a third generator-owned derivative of the root `settings.json`, written to the parent directory (`/home/user/.claude/settings.json` in cloud):
+
+- **Written unconditionally.** Repository selection is per session, but the setup script runs once into a snapshot every later session in the environment shares. So both tiers write the file whatever the current layout is: the setup tier seeds it, the per-session apply tier refreshes it. In a single-repo session the project root is the workspace itself and the parent file is inert; in a multi-repo session it is the only policy that loads. No setup-script flag is needed.
+- **Rendered from `origin/main` whenever git can reach it.** The file outlives the session that wrote it, so the branch that last rendered it would otherwise govern every following session. A cloud clone carries only the session branch, and git can authenticate only inside a live session (the platform proxy injects GitHub auth there; the setup tier has no credentials). So the setup tier seeds the file from the working tree and stamps `env.WORKSPACE_PARENT_POLICY_SOURCE` with `working-tree@<sha>`, and every apply-tier run inside a session fetches `main` and re-renders from it, stamping `origin/main`. A multi-repo session therefore converges to the reviewed rendering within seconds of start. A reviewed rendering is never downgraded to a working-tree one by a later fetch failure. `doctor` and `parent-settings --check` report a working-tree source as a problem, never healthy. A single-repo session on a feature branch still loads that branch's own settings directly, as before.
+- **Same derivation as the team stamps.** Every top-level key is copied verbatim except `hooks` (rebuilt) and the MCP keys. The hook commands pin the workspace clone's absolute path instead of resolving via `$CLAUDE_PROJECT_DIR`, which is the parent in this layout. `env.CLAUDE_WORKSPACE_ROOT` is set to the clone path.
+- **Fails closed without the workspace.** If a session in a workspace environment attaches other repos but not the workspace, the PreToolUse wrappers block file edits, Bash, and WebFetch, the deny rules in the same file still apply, and the banner reports NOT DETECTED so Claude refuses tool use per `security-check.md`. Read, Glob, Grep, and MCP tools have no wrapper (the same guarantee the team-folder stamps give). A workspace environment is for workspace work; use a different environment for anything else.
+- **Guarded destination.** The `parent-settings` subcommand is cloud-only, the generator refuses a parent that is the home directory (that target would be `~/.claude/settings.json`), and it never overwrites an existing file it did not write itself.
+- **Refresh takes effect in the running session.** Claude Code watches loaded settings files and reloads permissions and hooks on change, so when the apply tier rewrites the parent file the current session picks it up too.
+
+Things that do not change: only the workspace's policy applies, so the other repos' own `settings.json` and hooks stay unloaded; root-level content from every repo loads symmetrically, so two repos defining an agent with the same name shadow each other; nested `departments/**` content still needs composition.
+
+`python3 tools/bootstrap/bootstrap.py parent-settings [--check]` writes or verifies the file by hand, and `doctor` reports it under Security (in sync, missing, or drifted, together with the detected layout).
+
 ## Team-folder settings (Desktop local)
 
 Claude Code loads project settings from the folder a session starts in - settings never walk up the tree the way skills and `CLAUDE.md` do. A Desktop local session opened at a team folder therefore used to look fully configured (context and skills present) while silently running with no sandbox, no deny rules, and no hooks. The team-folder stamps close that gap.
@@ -80,7 +97,7 @@ Context index (in CLAUDE.md), read on demand:
   context/competition.md       → Full competitive landscape
   context/product.md           → Platform, pricing, economics
   context/gtm.md               → Cross-functional GTM strategy
-  context/key-metrics.md       → Headline company numbers with dates and sources
+  context/job-architecture.md  → Career ladder framework, IC competency definitions
 ```
 
 The base context is kept lean to preserve your context window. It includes a **context index** - a compressed table that tells Claude what detailed context exists and where, so Claude reads the full files only when the task requires it.
@@ -107,7 +124,8 @@ On both surfaces, the team's own skills, agents, commands, rules, and hooks are 
 ├── departments/             # All department and team folders
 ├── docs-for-humans/         # Human-only tutorials for workspace-wide workflows
 ├── scripts/                 # Workspace tooling (install.sh shim, claude.sh wrapper, audit)
-└── tools/bootstrap/         # The Python bootstrap tool (compose, cloud, install, doctor, reset)
+├── tools/bootstrap/         # The Python bootstrap tool (compose, cloud, install, doctor, reset)
+└── tools/maintenance/        # Checks the maintenance header on every context file (CI: maintenance-lint)
 ```
 
 The canonical layout for a department or team folder, the rule that folder names containing a `CLAUDE.md` must be globally unique, and what the bootstrap composes from a team folder are all documented in [CONTRIBUTING.md](../CONTRIBUTING.md). The how-to walkthrough is [Building out your team folder](building-your-team-folder.md).

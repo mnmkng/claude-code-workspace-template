@@ -25,6 +25,9 @@ Explicit subcommands for testing and ops:
                              also clears the personal context.
   settings-sync --check      Stamp (or with --check, verify) the derived
                              team-folder security settings (issue #141).
+  parent-settings --check    Write (or with --check, verify) the derived
+                             policy at the clone's parent directory that
+                             multi-repo cloud sessions load (issue #195).
 
 Stdlib only.  Target: Python 3.9+.
 """
@@ -46,11 +49,12 @@ import cloud         # noqa: E402
 import doctor        # noqa: E402
 import reset         # noqa: E402
 import settings_sync  # noqa: E402
+import parent_settings  # noqa: E402
 
 
 SUBCOMMAND_NAMES = {
     "install", "cloud", "compose", "personal", "doctor", "reset",
-    "settings-sync",
+    "settings-sync", "parent-settings",
 }
 
 
@@ -128,6 +132,18 @@ def build_parser():
              "fresh generator output, or a stray copy exists.",
     )
     p_sync.set_defaults(func=settings_sync.run)
+
+    p_parent = sub.add_parser(
+        "parent-settings",
+        help="Write the derived security policy to the workspace clone's parent "
+             "directory, the project root of a multi-repo cloud session (issue #195).",
+    )
+    p_parent.add_argument(
+        "--check", action="store_true",
+        help="Verify only: exit non-zero if the parent policy is missing or "
+             "differs from fresh generator output.",
+    )
+    p_parent.set_defaults(func=parent_settings.run)
 
     p_reset = sub.add_parser("reset", help="Undo composition.")
     p_reset.add_argument(

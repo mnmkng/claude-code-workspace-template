@@ -28,7 +28,7 @@ This performs all mechanical checks deterministically. Capture the full output.
 
 ### Step 2: Run qualitative checks
 
-These require judgment and cannot be scripted. For each check, apply the rules from the referenced conventions.md section.
+These require judgment and cannot be scripted. For each check, apply the rules from the referenced `CONTRIBUTING.md` section (or the rule file named in the check).
 
 **2a. SSOT check** (ref: "Content quality standards > Single source of truth")
 For each team CLAUDE.md, scan for factual content (not TODOs or references) that duplicates the root CLAUDE.md, a parent CLAUDE.md, or a `context/*.md` file.
@@ -39,7 +39,7 @@ Verify content is in the right location per the conventions: cross-functional in
 **2c. README accuracy**
 Compare `README.md` directory structure diagram and agent table against actual workspace state.
 
-**2d. Heading case check** (ref: voice-and-tone.md, sentence case rule)
+**2d. Heading case check** (ref: `.claude/rules/style-core.md`, "Formatting > Headings" sentence-case rule)
 Scan headings in all CLAUDE.md files for Title Case violations. Exclude proper nouns.
 
 **2e. .mcp.json check** (ref: "Directory structure conventions > MCP configuration")
@@ -53,6 +53,9 @@ Verify human-facing docs (tutorials, narrative guides, onboarding) live only in 
 
 **2h. Orphaned agent-context file check** (ref: "Directory structure conventions > Agent context vs human docs")
 Build the reference graph from every `CLAUDE.md` (and its context index), skill, and rule. Flag any agent-context file (e.g. under `context/`) that is not reachable - linked or transitively linked - from one of those entry points as an Error: nothing loads it, so wire it in or delete it. `README.md` and `docs-for-humans/` are exempt.
+
+**2i. Maintenance check** (ref: "Directory structure conventions > Maintenance header")
+Run `python3 tools/maintenance/check.py --report`. Every `ERROR` line is an Error (missing or malformed header, unknown key, data file without a card). Every `WARN` line is a Warning (missing `sources`, `owner`, or `verified_at`; an owner no longer in the org chart; a stale file). The audit script's freshness table covers only the files that carry no header (CLAUDE.md, README.md, rules) by git date; this report covers every headed context file by `verified_at` and `review_every`. Present the two as one freshness section, each file listed once. Then do what the lint cannot: a file whose header says `edit: here` but whose body reads as a verbatim copy of an external document (policy boilerplate with "Policy Owner / Effective Date", a docs-site page with navigation blockquotes, a pasted Terms page) is misdeclared - flag it as an Error with the fix "set `edit: upstream` and name the source".
 
 ### Step 3: Compile the report
 
@@ -88,7 +91,7 @@ If the user specified an output path, write the report there. Otherwise, output 
 
 **File**: [path]
 **Issue**: [What's wrong]
-**Convention**: [Which section of conventions.md is violated]
+**Convention**: [Which section of `CONTRIBUTING.md` (or which rule in `.claude/rules/`) is violated]
 **Suggested fix**: [How to fix it]
 
 ---

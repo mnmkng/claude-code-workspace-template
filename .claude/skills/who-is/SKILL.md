@@ -17,9 +17,11 @@ regenerated from the HR system and the chat tool. Even a mid-size company is a
 few hundred records, so **do not read it directly** - query it with the script
 and you spend a few hundred tokens instead of several thousand.
 
-If a query reports that the chart has no people yet, the file has not been
-populated. Say so rather than reporting the person as unverified. Populate it
-with `--import` (below) or the company's sync process.
+If a query reports that the chart has no people yet, the data file in this
+checkout is an empty placeholder: nothing has populated it. Say so rather than
+reporting the person as unverified. Populate it with `--import` (below) or the
+company's sync process. Its maintenance header (sources, owner, cadence) is the
+sibling card `references/org-chart.md`.
 
 ```bash
 python3 .claude/skills/who-is/scripts/who_is.py "Jane Doe"          # person card

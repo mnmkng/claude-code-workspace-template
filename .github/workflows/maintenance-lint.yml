@@ -1,0 +1,42 @@
+name: maintenance-lint
+
+# Context files carry a maintenance header (issue #178): sources, owner,
+# whether edits belong here or upstream, review cadence, and the date the
+# content was last verified. Data files are claimed by a Markdown card.
+#
+# Headers are written by the people who know the file, never generated. So a
+# missing header is a warning across the tree and an error on any file the
+# PR touches: every edit is the moment the header gets written. --strict turns
+# every warning into an error.
+#
+# Runs on every PR because a context file can be added anywhere in the tree.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # --changed-since needs the base branch
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Checker unit tests
+        run: |
+          python3 -m pip install --quiet pyyaml   # only for the parser equivalence test; the checker itself is stdlib-only
+          python3 -m unittest discover -s tools/maintenance/tests -t tools/maintenance
+
+      - name: Maintenance headers (PR - touched files must have one)
+        if: github.event_name == 'pull_request'
+        run: python3 tools/maintenance/check.py --report --changed-since "origin/${{ github.base_ref }}"
+
+      - name: Maintenance headers (main)
+        if: github.event_name != 'pull_request'
+        run: python3 tools/maintenance/check.py --report

@@ -521,10 +521,8 @@ trap 'rm -f "$STALE_FINDINGS"' EXIT
     freshness_check "CLAUDE.md" 30
     freshness_check "README.md" 30
 
-    # Context files (90d)
-    for f in context/*.md; do
-        [[ -f "$f" ]] && freshness_check "$f" 90
-    done
+    # Context files carry their own cadence in the maintenance header;
+    # tools/maintenance/check.py --report owns their freshness, not this table.
 
     # Department/team CLAUDE.md files (90d)
     for file in "${claude_files[@]}"; do

@@ -17,7 +17,7 @@ Security enforcement (editing these lets you disable your own guardrails):
 
 If the user asks for a change to any file above, propose the diff in chat and ask the user to apply it. Do not use Write, Edit, MultiEdit, or shell redirection to modify these files. A hook will block you and exit with code 2.
 
-The team-folder copies of `settings.json` (in `departments/**/.claude/`) are generator-owned derivatives of the root file. The only sanctioned way to create or update them is `python3 tools/bootstrap/bootstrap.py settings-sync`, run at the user's request and committed via a reviewed PR. Never produce or modify them any other way.
+The team-folder copies of `settings.json` (in `departments/**/.claude/`) are generator-owned derivatives of the root file. The only sanctioned way to create or update them is `python3 tools/bootstrap/bootstrap.py settings-sync`, run at the user's request and committed via a reviewed PR. Never produce or modify them any other way. The same applies to the parent-directory policy that multi-repo cloud sessions load (`/home/user/.claude/settings.json` in cloud): it is written only by the cloud bootstrap tiers or `python3 tools/bootstrap/bootstrap.py parent-settings`, never by hand.
 
 ## Never take these actions
 

@@ -65,13 +65,20 @@ class DoctorTests(unittest.TestCase):
         self._p3 = patch("doctor._user_settings_path", return_value=self.user_settings)
         self._p3.start()
 
+        # Multi-repo parent policy (#195): a temp parent dir, empty by default.
+        self._parent = tempfile.TemporaryDirectory()
+        os.environ["WORKSPACE_PARENT_SETTINGS_DIR"] = self._parent.name
+        self.parent_file = Path(self._parent.name) / ".claude" / "settings.json"
+
     def tearDown(self):
         for p in (self._p1, self._p2, self._p3):
             p.stop()
         self._tmp.cleanup()
         self._user_home.cleanup()
+        self._parent.cleanup()
         os.environ.pop("WORKSPACE_TEAM", None)
         os.environ.pop("CLAUDE_CODE_REMOTE", None)
+        os.environ.pop("WORKSPACE_PARENT_SETTINGS_DIR", None)
 
     def _run(self):
         buf = io.StringIO()
@@ -224,10 +231,108 @@ class DoctorTests(unittest.TestCase):
     def test_user_hook_not_applicable_in_cloud(self):
         # In cloud the user-level hook is irrelevant; never flag its absence.
         os.environ["CLAUDE_CODE_REMOTE"] = "true"
+        self._origin_main()  # keep the parent-policy line healthy
         rc, out = self._run()
         self.assertEqual(rc, 0)
         self.assertIn("user-level hook: not applicable in cloud", out)
         self.assertNotIn("user-level hook: absent", out)
+
+    # --- multi-repo parent policy (#195) --------------------------------
+
+    def _origin_main(self):
+        """Commit only the root settings.json and point origin/main at it.
+
+        The parent policy is rendered from origin/main and fails closed
+        without it. Tracking only that file keeps the team-folder stamp check
+        at "no targets", so the other doctor lines are unaffected.
+        """
+        g = ["git", "-C", str(self.root), "-c", "user.email=t@t", "-c", "user.name=t"]
+        subprocess.run(g + ["init", "-q"], check=True)
+        subprocess.run(g + ["add", ".claude/settings.json"], check=True)
+        subprocess.run(g + ["commit", "-q", "-m", "main"], check=True)
+        subprocess.run(g + ["update-ref", "refs/remotes/origin/main", "HEAD"], check=True)
+
+    def test_parent_policy_not_applicable_locally(self):
+        rc, out = self._run()
+        self.assertEqual(rc, 0)
+        self.assertIn("multi-repo parent policy: not applicable outside cloud", out)
+
+    def test_parent_policy_working_tree_seed_is_problem(self):
+        # No origin/main anywhere: the writer seeds from the working tree. By
+        # the time doctor runs in a session the apply tier should have
+        # upgraded it, so a working-tree source still in place is a problem.
+        os.environ["CLAUDE_CODE_REMOTE"] = "true"
+        import parent_settings
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            parent_settings.write(self.root)
+        rc, out = self._run()
+        self.assertEqual(rc, 1)
+        self.assertIn("was rendered from working-tree", out)
+        self.assertIn("not origin/main", out)
+
+    def test_parent_policy_unverifiable_is_warning(self):
+        # Rendered from origin/main, but the ref is gone from the clone:
+        # cannot compare, do not fail.
+        os.environ["CLAUDE_CODE_REMOTE"] = "true"
+        self._origin_main()
+        import parent_settings
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            parent_settings.write(self.root)
+        subprocess.run(["git", "-C", str(self.root), "update-ref", "-d",
+                        "refs/remotes/origin/main"], check=True)
+        rc, out = self._run()
+        self.assertEqual(rc, 0)
+        self.assertIn("byte-identity was not verified", out)
+
+    def test_parent_policy_missing_single_repo_is_warning(self):
+        os.environ["CLAUDE_CODE_REMOTE"] = "true"
+        self._origin_main()
+        rc, out = self._run()
+        self.assertEqual(rc, 0)
+        self.assertIn("multi-repo parent policy: missing", out)
+        self.assertIn("layout: single-repo", out)
+
+    def test_parent_policy_missing_multi_repo_is_problem(self):
+        os.environ["CLAUDE_CODE_REMOTE"] = "true"
+        self._origin_main()
+        (Path(self._parent.name) / "other-repo" / ".git").mkdir(parents=True)
+        rc, out = self._run()
+        self.assertEqual(rc, 1)
+        self.assertIn("multi-repo parent policy: missing", out)
+        self.assertIn("layout: multi-repo, 1 sibling repo(s)", out)
+
+    def test_parent_policy_in_sync(self):
+        os.environ["CLAUDE_CODE_REMOTE"] = "true"
+        self._origin_main()
+        import parent_settings
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            parent_settings.write(self.root)
+        rc, out = self._run()
+        self.assertEqual(rc, 0)
+        self.assertIn("multi-repo parent policy:", out)
+        self.assertIn("in sync", out)
+
+    def test_parent_policy_foreign_file_is_problem(self):
+        os.environ["CLAUDE_CODE_REMOTE"] = "true"
+        self._origin_main()
+        self.parent_file.parent.mkdir(parents=True)
+        self.parent_file.write_text("{}\n")
+        rc, out = self._run()
+        self.assertEqual(rc, 1)
+        self.assertIn("was not written by this generator", out)
+
+    def test_parent_policy_drift_is_problem(self):
+        os.environ["CLAUDE_CODE_REMOTE"] = "true"
+        self._origin_main()
+        import parent_settings
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            parent_settings.write(self.root)
+        data = json.loads(self.parent_file.read_text())
+        data["permissions"]["deny"] = []  # weakened, marker intact
+        self.parent_file.write_text(json.dumps(data, indent=2) + "\n")
+        rc, out = self._run()
+        self.assertEqual(rc, 1)
+        self.assertIn("drifted from the origin/main rendering", out)
 
     # --- version pin ----------------------------------------------------
 

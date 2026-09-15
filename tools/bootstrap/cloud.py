@@ -23,6 +23,12 @@ Two-tier strategy:
       → fetch WORKSPACE_PERSONAL_GIST → CLAUDE.local.md (below the team block)
       → re-apply the stop-hook no-op when the setup tier recorded the intent
         (the platform clobbers it on every session start — see #72)
+      → refresh the parent-directory policy file from origin/main (#195)
+
+  Both tiers also write the derived policy to <clone parent>/.claude/ - the
+  only settings file Claude Code loads in a multi-repo session (project root
+  = the parent of the sibling clones). Inert in a single-repo session. See
+  parent_settings.py.
 
     Re-compose is additive: adds/edits propagate immediately; a removed team
     artifact lingers until a cache rebuild or `reset`.
@@ -37,6 +43,7 @@ with `|| true` so the session still starts.
 import argparse
 import os
 import shutil
+import subprocess
 from pathlib import Path
 
 from lib import log
@@ -45,6 +52,7 @@ from lib import paths as path_lib
 from lib import staging
 
 import compose
+import parent_settings
 import personal
 
 
@@ -79,7 +87,10 @@ def run(args):
     log.set_log_file(workspace_root / BOOTSTRAP_LOG_REL)
 
     mode = "apply-only" if apply_only else ("compose-only" if compose_only else "default")
-    log.step(f"cloud: mode={mode}")
+    # The setup tier runs into a cached snapshot, so the tool version that ran
+    # there can lag the checkout a session sees. Log the commit so a stale
+    # snapshot is visible in .bootstrap-log.txt (#197 verification).
+    log.step(f"cloud: mode={mode} (tool at {_tool_commit(workspace_root)})")
 
     if not apply_only and getattr(args, "disable_stop_hook", False):
         _disable_stop_hook()
@@ -94,6 +105,18 @@ def run(args):
 
     log.ok("cloud: done")
     return 0
+
+
+def _tool_commit(workspace_root):
+    """Short commit of the checkout this tool is running from, or 'unknown'."""
+    try:
+        res = subprocess.run(
+            ["git", "-C", str(workspace_root), "rev-parse", "--short", "HEAD"],
+            capture_output=True, text=True, timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return "unknown"
+    return res.stdout.strip() if res.returncode == 0 and res.stdout.strip() else "unknown"
 
 
 def _stop_hook_path():
@@ -159,6 +182,7 @@ def _compose_and_stage(workspace_root, args):
         disable_stop_hook=bool(getattr(args, "disable_stop_hook", False)),
     )
     log.ok(f"cloud: staged {len(chain_rel_paths)} chain level(s) to {dst}")
+    _write_parent_settings(workspace_root)
 
 
 def _apply_only(workspace_root):
@@ -209,6 +233,26 @@ def _apply_only(workspace_root):
         _disable_stop_hook()
 
     personal.sync(workspace_root, os.environ.get("WORKSPACE_PERSONAL_GIST"))
+    _write_parent_settings(workspace_root)
+
+
+def _write_parent_settings(workspace_root):
+    """Write/refresh the multi-repo parent policy (#195). Never fatal.
+
+    The setup tier runs into a snapshot every later session in the environment
+    shares, and repository selection is per session, so the file is written
+    whatever the current layout is. A failure is logged, not raised: the
+    single-repo path must not break because the parent was not writable.
+    """
+    try:
+        siblings = parent_settings.sibling_repos(workspace_root)
+        layout = f"multi-repo ({len(siblings)} sibling repo(s))" if siblings else "single-repo"
+        log.step(f"cloud: parent policy → {parent_settings.parent_settings_path(workspace_root)} "
+                 f"(layout: {layout})")
+        parent_settings.write(workspace_root)
+    except (SystemExit, Exception) as e:  # noqa: BLE001 - never fatal, by contract
+        log.warn(f"cloud: could not write the parent policy ({type(e).__name__}: {e}); "
+                 "multi-repo sessions will not load the security config until this is fixed")
 
 
 def _restore_overlay_from_staging(workspace_root, src, meta):

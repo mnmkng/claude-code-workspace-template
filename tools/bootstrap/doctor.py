@@ -8,7 +8,8 @@ Sections:
   Environment  - mode (cloud/local/unknown), workspace root, resolved team
   Composition  - manifest contents (team, levels, per-level counts), copied files
   Context      - personal CLAUDE.local.md state (loaded/empty/missing)
-  Security     - settings.json (sandbox enabled, deny rules), user-level hook
+  Security     - settings.json (sandbox enabled, deny rules), user-level hook,
+                 team-folder stamps, the multi-repo parent policy (cloud)
   Version      - bootstrap version pin
 
 Severity model:
@@ -33,6 +34,7 @@ from lib import manifest as manifest_lib
 from lib import paths as path_lib
 
 import compose
+import parent_settings
 import settings_sync
 
 
@@ -73,6 +75,7 @@ def run(args):
     _check_settings(report, root)
     _check_user_hook(report, root, mode)
     _check_team_policy(report, root)
+    _check_parent_policy(report, root, mode)
 
     report.section("Version")
     _check_version(report, root)
@@ -353,6 +356,55 @@ def _check_team_policy(report, root):
     )
     for rel in (missing + drift + strays)[:5]:
         report.line(INFO, rel, indent=6)
+
+
+def _check_parent_policy(report, root, mode):
+    """Report the multi-repo parent policy (issue #195), cloud only.
+
+    In a multi-repo cloud session the file at the clone's parent is the only
+    settings file that loads, so missing or drifted there is a real problem.
+    In a single-repo session it is inert: missing is a warning (the apply
+    tier writes it on the next session), drift still a problem because the
+    next multi-repo session would run under it.
+    """
+    if mode != "cloud":
+        report.line(INFO, "multi-repo parent policy: not applicable outside cloud")
+        return
+    try:
+        st = parent_settings.status(root)
+    except SystemExit as e:
+        report.line(PROBLEM, f"multi-repo parent policy: {e}")
+        return
+    n = len(st["siblings"])
+    layout = f"multi-repo, {n} sibling repo(s)" if n else "single-repo"
+    fix = "run `python3 tools/bootstrap/bootstrap.py parent-settings`"
+    if not st["exists"]:
+        report.line(
+            PROBLEM if n else WARN,
+            f"multi-repo parent policy: missing at {st['path']} (layout: {layout}); {fix}",
+        )
+        return
+    problem = parent_settings.check_problem(st)
+    if problem:
+        # Working-tree seed still in place, drift, or a foreign file. A
+        # working-tree seed here means the in-session fetch of origin/main
+        # failed, since the apply tier already ran at session start.
+        report.line(PROBLEM, f"multi-repo parent policy: {problem} (layout: {layout}); {fix}")
+        return
+    if not st["verified"]:
+        report.line(
+            WARN,
+            f"multi-repo parent policy: {st['path']} records {parent_settings.POLICY_REF} "
+            f"as its source, but that ref is not in this clone so byte-identity was not "
+            f"verified (layout: {layout})",
+        )
+        return
+    report.line(
+        OK,
+        f"multi-repo parent policy: {st['path']} in sync "
+        f"(v{parent_settings.PARENT_POLICY_VERSION}, source {parent_settings.POLICY_REF}; "
+        f"layout: {layout})",
+    )
 
 
 # Setup scripts that may carry a cache-pin version comment. The epic's plan

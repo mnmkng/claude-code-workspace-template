@@ -62,6 +62,8 @@ Cloud environments are **per-user**: each person creates their own.
 
 4. **Start a session.** Your team's skills and context load automatically. If the bootstrap didn't run, Claude will tell you the team config is missing and refuse to work; see [Troubleshooting](#troubleshooting).
 
+You can attach additional repositories to a session (a private repo with your own skills and context, or a repo you are developing) alongside the workspace with no change to the setup script. The workspace's security config and bootstrap still apply; the other repos' root `CLAUDE.md`, rules, skills, commands, and agents load next to the workspace's. This is also how a company can keep this template's framework public and its own context private: fork the template, put the company content in a second private repo, attach both. Details and limits in [Multi-repo cloud sessions](docs-for-humans/how-it-works.md#multi-repo-cloud-sessions).
+
 ## Set up the CLI (engineers)
 
 Clone the repo, run `bash scripts/install.sh` once, then run `claude` from anywhere in the tree. Full setup, project folders, local personalization, the git and gh policy, and troubleshooting live in [Using the workspace locally with the CLI](docs-for-humans/using-the-cli-locally.md).
