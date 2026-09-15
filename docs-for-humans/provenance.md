@@ -60,7 +60,8 @@ The workspace's own PreToolUse hook refuses to let Claude modify any file whose 
 ```bash
 git apply --check protected-files.patch && git apply protected-files.patch
 git rm -q protected-files.patch
-bash scripts/test-security.sh        # sections 1-5 must pass; section 6 needs departments/
+chmod +x .claude/hooks/*.sh scripts/claude.sh scripts/install.sh   # a patch must never change modes; re-assert them
+bash scripts/test-security.sh        # sections 1-5 pass, except the two banner cases and section 6 that cd into departments/ (they pass once the example departments exist)
 git commit -am "De-brand protected files"
 ```
 
