@@ -5,6 +5,8 @@ where it is broken, so a check that silently stops finding anything fails a
 test rather than turning CI green.
 """
 
+import contextlib
+import io
 import json
 import os
 import subprocess
@@ -108,7 +110,8 @@ class CleanTreeTests(LintFixtureBase):
         cwd = os.getcwd()
         os.chdir(self.root)
         try:
-            self.assertEqual(lint.run(None), 0)
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(lint.run(None), 0)
         finally:
             os.chdir(cwd)
 
@@ -120,7 +123,8 @@ class CleanTreeTests(LintFixtureBase):
         cwd = os.getcwd()
         os.chdir(self.root)
         try:
-            self.assertEqual(lint.run(None), 1)
+            with contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(lint.run(None), 1)
         finally:
             os.chdir(cwd)
 

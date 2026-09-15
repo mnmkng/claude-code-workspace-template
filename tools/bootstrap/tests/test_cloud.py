@@ -87,8 +87,14 @@ class CloudOrchestrationTests(unittest.TestCase):
         self._compose_root_patch.start()
 
     def tearDown(self):
-        self._root_patch.stop()
+        # Both patchers target the same attribute (cloud.path_lib and
+        # compose.path_lib are the same lib.paths module object), so they must
+        # be stopped in reverse order: stopping the outer one first restores
+        # the real function, and the inner stop then puts its own mock back
+        # permanently - leaking a dead temp root into every later test that
+        # resolves the workspace root for real.
         self._compose_root_patch.stop()
+        self._root_patch.stop()
         self.tmp_root.cleanup()
         self.tmp_stage.cleanup()
         self.tmp_hook.cleanup()
