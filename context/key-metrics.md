@@ -75,7 +75,7 @@ this table, with its as-of date attached.
 
 | Metric | Value | As of | Source |
 |---|---|---|---|
-| Headcount, both branches and corporate | 40 | August 2026 | The HR system |
+| Headcount, both branches and corporate | 42 | August 2026 | The HR system |
 | Sales representatives, Scranton | 7 | August 2026 | The HR system |
 | Sales representatives, Utica | 4 | August 2026 | The HR system |
 | Voluntary attrition, trailing 12 months | 7% | August 2026 | The HR system |

@@ -2,7 +2,7 @@
   "note": "Generated file, do not hand-edit; the next sync overwrites it. Source: the HR system (name, job title, department, manager) and the chat tool (nickname from display name, slack_team parsed from the text after \"@\" in the profile title, both best effort). Populate it with `who_is.py --import people.csv` or a scheduled sync that opens a pull request when the data changes; \"updated\" is the date of the last data change, not the last run. Fix data in the source systems, not here. Query it with the who-is skill rather than reading it whole. Directory data: internal workspace only, never publish.",
   "source": "example data",
   "updated": "2026-09-15",
-  "count": 40,
+  "count": 42,
   "people": [
     {
       "name": "Alan Brand",
@@ -297,6 +297,13 @@
       "title": "Warehouse Foreman",
       "department": "Warehouse",
       "manager": "Karen Filippelli",
+      "slack_team": "Utica Warehouse"
+    },
+    {
+      "name": "Roy Weber",
+      "title": "Warehouse Associate",
+      "department": "Warehouse",
+      "manager": "Jim Foley",
       "slack_team": "Utica Warehouse"
     }
   ]

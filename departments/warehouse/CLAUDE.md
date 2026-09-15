@@ -15,7 +15,7 @@ are not traded against delivery windows.
 |------|-------|------------|
 | Warehouse Manager | 1 | Regional Manager, Scranton |
 | Warehouse Foreman | 2 | Warehouse Manager (Scranton); Regional Manager, Utica (Utica) |
-| Warehouse Associate | 6 | Warehouse Foreman |
+| Warehouse Associate | 7 | Warehouse Foreman |
 
 Counts are as of August 2026.
 
