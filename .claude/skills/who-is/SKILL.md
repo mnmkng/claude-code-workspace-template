@@ -24,13 +24,13 @@ company's sync process. Its maintenance header (sources, owner, cadence) is the
 sibling card `references/org-chart.md`.
 
 ```bash
-python3 .claude/skills/who-is/scripts/who_is.py "Jane Doe"          # person card
-python3 .claude/skills/who-is/scripts/who_is.py --dept "sales"      # everyone in a department
-python3 .claude/skills/who-is/scripts/who_is.py --tree "Jane"       # everyone beneath a person
-python3 .claude/skills/who-is/scripts/who_is.py --chain "Sam"       # management chain upward
-python3 .claude/skills/who-is/scripts/who_is.py --team "Scranton"   # everyone in a chat team
-python3 .claude/skills/who-is/scripts/who_is.py --title "manager"   # everyone whose title matches
-python3 .claude/skills/who-is/scripts/who_is.py --stats             # departments and headcount
+python3 .claude/skills/who-is/scripts/who_is.py "Hide"             # person card
+python3 .claude/skills/who-is/scripts/who_is.py --dept "sales"     # everyone in a department
+python3 .claude/skills/who-is/scripts/who_is.py --tree "Dwight"    # everyone beneath a person
+python3 .claude/skills/who-is/scripts/who_is.py --chain "Phyllis"  # management chain upward
+python3 .claude/skills/who-is/scripts/who_is.py --team "Scranton"  # everyone in a chat team
+python3 .claude/skills/who-is/scripts/who_is.py --title "manager"  # everyone whose title matches
+python3 .claude/skills/who-is/scripts/who_is.py --stats            # departments and headcount
 ```
 
 ## What is in the data
@@ -60,20 +60,22 @@ Many HR systems record the real team as a sub-department that their export or
 API does not expose. Two partial answers exist instead:
 
 ```bash
-python3 .claude/skills/who-is/scripts/who_is.py --team "Scranton Sales"   # chat team
-python3 .claude/skills/who-is/scripts/who_is.py --tree "Jane Doe"        # = the team she leads
+python3 .claude/skills/who-is/scripts/who_is.py --team "Scranton Sales"     # chat team
+python3 .claude/skills/who-is/scripts/who_is.py --tree "Karen Filippelli"   # = the team she leads
 ```
 
 `slack_team` is the better answer where it exists, because people maintain it
-themselves. It is also free text, so values are not standardized. Treat it as a
+themselves. It is also the only field that separates the two branches: everyone
+in Scranton sales and everyone in Utica sales has `department: Sales`, and only
+`slack_team` says which office they sit in. It is also free text, so values are not standardized. Treat it as a
 hint, say where it came from, and fall back to `--tree` on a team lead when it
 is missing.
 
 ## Matching
 
 Accent- and case-insensitive, across both the formal name and the nickname,
-with fallbacks to partial and surname-token matches. So `"Jose Garcia"` finds
-José García, `"Michal Olender"` finds Michał Olender, and a nickname finds the
+with fallbacks to partial and surname-token matches. So `"Oscar Martinez"` finds
+Óscar Martínez, `"Hide"` finds Hidetoshi Hasagawa, and a nickname finds the
 person who uses it. Type the name as you have it and let the script do the
 work.
 
@@ -83,18 +85,20 @@ exactly matches one person returns that person even when other people's names
 contain the same letters.
 
 When a query is genuinely ambiguous the script lists candidates rather than
-guessing. A bare first name shared by two people returns both. Adding a surname
-disambiguates through the token tier.
+guessing. A bare first name shared by two people returns both: `"Kevin"` returns
+Kevin Malone and Kevin Doyle. Adding a surname disambiguates through the token
+tier.
 
-An exact hit that is *nearly* ambiguous still warns: if two other people go by
+An exact hit that is *nearly* ambiguous still warns: if another person goes by
 a variant of the same nickname, the script returns the exact match and then
-names the others. Read the warning before using the answer; the right move is
+names the others. `"Jim"` is exactly James Halpert's nickname, so it returns his
+card and then warns that Jim Foley also matched. Read the warning before using the answer; the right move is
 usually to ask which one was meant.
 
-Output shows both name forms when they differ: `Jane Doe (JD)`. Only the part
-of the nickname that is not already in the name is shown, so a person signing
-with a shortened first name and the same surname renders as
-`Barbara Smith (Barb)`, not with a duplicated surname. The stored value keeps
+Output shows both name forms when they differ: `Kevin Malone (Kev)`. Only the
+part of the nickname that is not already in the name is shown, so a person
+signing with a shortened first name and the same surname renders as
+`Phyllis Lapin-Vance (Phyllis)`, not with a duplicated surname. The stored value keeps
 the full chat string and remains searchable.
 
 List lines follow one shape:
