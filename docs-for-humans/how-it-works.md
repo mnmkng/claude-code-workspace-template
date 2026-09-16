@@ -108,6 +108,8 @@ The base context is kept lean to preserve your context window. It includes a **c
 - **Skills** (`.claude/skills/*/SKILL.md`) are workflows loaded automatically when Claude detects a matching task, or invoked via `/skill-name`. Company-wide skills include `who-is`, `setup-workspace`, and `add-team`; teams add their own under their folder.
 - **Rules** (`.claude/rules/*.md`) are always-loaded guardrails: `style-core.md` (formatting and terminology), `data-sensitivity.md` (what not to include in prompts), and `security-check.md` (what Claude may not touch).
 
+Two of those skills write the workspace rather than read it. `setup-workspace` runs once on a fresh clone: it drafts the company layer from your public website, interviews you for the org layer, shows you the spec and the full list of paths it would write and delete, and only then replaces the example company - writing the new root `CLAUDE.md` and the new departments *before* deleting the old ones, so the three root markers the bootstrap looks for are never missing mid-run. `add-team` is the same machinery for one folder, any time later: four questions, then the scaffold. Both go through `python3 tools/bootstrap/bootstrap.py scaffold`, which is CONTRIBUTING's folder layout in executable form, and both leave the tree passing `bootstrap.py lint`. Neither edits a protected file: where a company needs a new entry in the security config, the skill prints a diff and a human applies it.
+
 On both surfaces, the team's own skills, agents, commands, rules, and hooks are added to the company-wide set - by cwd-walking on the CLI, and by composition in Cloud.
 
 ## Repo layout at a glance

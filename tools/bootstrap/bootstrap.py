@@ -25,6 +25,10 @@ Explicit subcommands for testing and ops:
                              also clears the personal context.
   settings-sync --check      Stamp (or with --check, verify) the derived
                              team-folder security settings (issue #141).
+  lint                       Workspace structure and security checks (the
+                             checks security-lint runs in CI).
+  scaffold  --spec FILE      Create department/team folders from a JSON spec
+            --dry-run        (CONTRIBUTING's layout in executable form).
   parent-settings --check    Write (or with --check, verify) the derived
                              policy at the clone's parent directory that
                              multi-repo cloud sessions load (issue #195).
@@ -50,11 +54,13 @@ import doctor        # noqa: E402
 import reset         # noqa: E402
 import settings_sync  # noqa: E402
 import parent_settings  # noqa: E402
+import lint             # noqa: E402
+import scaffold         # noqa: E402
 
 
 SUBCOMMAND_NAMES = {
     "install", "cloud", "compose", "personal", "doctor", "reset",
-    "settings-sync", "parent-settings",
+    "settings-sync", "parent-settings", "lint", "scaffold",
 }
 
 
@@ -144,6 +150,30 @@ def build_parser():
              "differs from fresh generator output.",
     )
     p_parent.set_defaults(func=parent_settings.run)
+
+    p_lint = sub.add_parser(
+        "lint",
+        help="Workspace structure and security checks: unique CLAUDE.md folder "
+             "names, resolvable @imports, required .gitignore entries, settings "
+             "stamps in sync, executable hooks, no committed secrets.",
+    )
+    p_lint.set_defaults(func=lint.run)
+
+    p_scaffold = sub.add_parser(
+        "scaffold",
+        help="Create department and team folders from a JSON spec: CLAUDE.md "
+             "with the standard sections, projects/.gitkeep, CODEOWNERS lines, "
+             "then settings-sync and lint.",
+    )
+    p_scaffold.add_argument(
+        "--spec", required=True, metavar="FILE",
+        help="Path to the JSON spec (see tools/bootstrap/scaffold.py).",
+    )
+    p_scaffold.add_argument(
+        "--dry-run", action="store_true",
+        help="Print the planned tree and write nothing.",
+    )
+    p_scaffold.set_defaults(func=scaffold.run)
 
     p_reset = sub.add_parser("reset", help="Undo composition.")
     p_reset.add_argument(

@@ -294,6 +294,8 @@ Standard sections (in this order, all required - use `[TODO]` for empty ones):
 ## [Department-specific sections below...]
 ```
 
+`python3 tools/bootstrap/bootstrap.py scaffold --spec <file>` writes exactly this template (and the `add-team` skill drives it); it is the executable form of this section, so change both together.
+
 Department-specific sections (e.g. Legal's Contracts/IP, Marketing's Channels) come after the 4 standard sections. CLAUDE.md is for durable context - ephemeral priorities belong in project folders.
 
 Rules:

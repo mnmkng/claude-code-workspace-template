@@ -23,7 +23,9 @@ Clone the template, open it in Claude Code, and run:
 /setup-workspace
 ```
 
-The skill reads your public website (and, optionally, your LinkedIn company page and any documents you give it) to draft the company layer, interviews you for the org layer - departments, teams, owners, tools, terminology - shows you everything before writing a byte, then replaces the example company with yours, stamps the team security settings, and validates the result. Later, `/add-team` scaffolds a new department or team folder in one step. Full walkthrough: [Building out your team folder](docs-for-humans/building-your-team-folder.md).
+The skill reads your public website to draft the company layer (and, if you give it your LinkedIn company page, aggregates job titles into a proposed department tree - structure only, no people), interviews you for the org layer - departments, teams, owners, tools, terminology, locale - and shows you the spec and every path it would write or delete before writing a byte. On your yes it replaces the example company with yours: root `CLAUDE.md`, the department folders, the context files, the style and data-sensitivity rules, CODEOWNERS, and optionally your org chart from an HR export. Then it stamps the team security settings and validates the result. It never edits the security config itself; where your company needs an entry there, it prints a diff for you to apply.
+
+Later, `/add-team` scaffolds a new department or team folder in one step, and the `context-extractor` agent imports knowledge from documents and Notion pages. Full walkthrough: [Building out your team folder](docs-for-humans/building-your-team-folder.md).
 
 Requires a current Claude Code (hooks, skills, and the `sandbox` settings block) and Python 3.9 or later.
 

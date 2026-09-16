@@ -13,6 +13,8 @@ Two rules to know up front, both enforced in CI:
 - **The folder name must be globally unique** among folders that contain a `CLAUDE.md`. Cloud team resolution keys on the folder basename, so two teams both named `content` in different departments would collide. Pick a distinct name.
 - **Every `@import` line in a committed `CLAUDE.md` must resolve.** A typo'd import fails silently at runtime, so CI checks them.
 
+**The fast path is `/add-team`.** The skill asks for the folder type, the name (checking it against the globally-unique rule before writing anything), the owner handle, and the team's tools, then runs `python3 tools/bootstrap/bootstrap.py scaffold --spec <file>`: it writes the `CLAUDE.md` with the standard sections and a `[TODO]` in each, `projects/.gitkeep`, the CODEOWNERS line, and the folder's security settings stamp, and finishes by running the workspace lint. Doing it by hand is equally fine - the rest of this section is what the skill does for you.
+
 Start sparse. Create `CLAUDE.md` with the standard sections and fill the rest with `[TODO]` markers - they show what's missing and invite incremental improvement. The [department/team CLAUDE.md template](../CONTRIBUTING.md#department-claudemd) shows the required sections.
 
 **Register it for Cloud.** When someone wants a Cloud environment scoped to your team, they set the setup script's `--team` to your folder basename (see the [README](../README.md#set-up-cloud)). The bootstrap composes your team's `.claude/skills`, `agents`, `commands`, `rules`, and `hooks` and `@import`s your `CLAUDE.md` chain. Nothing else is required to make a new team folder Cloud-ready.
