@@ -31,6 +31,12 @@ Show the seeded list as a table: proposed name, evidence, count. A node backed
 by two job titles is a guess; one backed by twenty is a fact. Say which is
 which rather than presenting them alike.
 
+Say what the list is built on before they answer it: a bounded sample of pages
+and profiles, not a directory. **Ask what is missing before asking what is
+wrong** - a department with no public footprint (legal, finance, and internal
+IT are the usual ones) will simply not be in the seeded list, and a user
+reading a confident table tends to edit it rather than add to it.
+
 Rules to apply to the answer, and to say out loud when they bite:
 
 - Kebab-case, lowercase, no spaces.

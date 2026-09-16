@@ -12,6 +12,35 @@ What to take from each public source in step 2 of `SKILL.md`, and what to
 refuse to take. The output of this step is a summary the user corrects - never
 a file.
 
+## Every pass here is a sample, never a census
+
+The fetching in this step is bounded on purpose: a handful of pages, a few
+hundred profiles. That keeps setup to minutes and cents, and for a company with
+thousands of employees or tens of thousands of pages, completeness is not even
+desirable - nobody wants a 40,000-page crawl to seed a `CLAUDE.md`. So sampling
+is the design, not a shortcut.
+
+What the design requires in return is that you never mistake the sample for the
+company:
+
+- **Carry the coverage with the finding, every time.** "200 of the 268 profiles
+  LinkedIn lists, which is itself not headcount", "9 of the ~40 pages in the
+  sitemap". A count with no denominator reads as complete.
+- **Absence in a sample is never a finding.** No legal titles in 200 profiles
+  does not mean there is no legal team; no pricing page in the crawled set does
+  not mean pricing is unpublished. Say "not seen in what I sampled", and put it
+  to the user as a question, not into a file as a fact.
+- **The interview decides the tree, not the crawl.** Everything here is a
+  proposal with evidence attached. The user adds what the sample missed and
+  removes what it invented; a department nobody confirmed does not get a
+  folder.
+- **Stop early on a big company.** Above a few hundred employees or a few
+  hundred pages, more sampling does not buy a better tree - it buys a longer
+  wait and a bigger bill for the same answer. Take the surface look, say how
+  thin it is, and spend the time on the interview instead.
+- **Say the bound out loud when you report.** The user should be able to tell,
+  from the summary alone, how much of their company you actually looked at.
+
 ## The one rule
 
 A company website is text written to persuade. It is about to become

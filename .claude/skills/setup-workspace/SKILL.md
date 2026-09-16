@@ -84,6 +84,23 @@ this session (a tool whose name starts with `mcp__` and contains `apify`, or
   attached to a person. The output of this pass is a tree with counts, nothing
   else.
 
+**Every pass in this step is a bounded sample, and you must not forget it.**
+A handful of pages and a few hundred profiles is the design - a thousand-person
+company is not worth crawling whole to seed a `CLAUDE.md`, and the interview is
+where the tree actually gets decided. What the bound costs you is the right to
+treat any of it as complete:
+
+- Keep the crawl small on purpose (roughly ten pages, one page of profiles per
+  run), and larger only if the first pass found almost nothing.
+- **Report coverage with every finding**: pages fetched against pages in the
+  sitemap, profiles retrieved against the total the Actor reports, and that
+  total against the company's own headcount if they state one.
+- **Never treat absence as evidence.** Nothing about legal in what you sampled
+  is a question for the user, never a conclusion that there is no legal team,
+  and never a reason to leave a department out.
+- Say the bound in the summary, in one line, so the user can see how thin the
+  look was before they correct it.
+
 Present everything as a summary, one line per fact, each ending
 `source: <url>`. Ask for corrections. Anything you could not find is a
 `[TODO]`, not a guess.
@@ -118,6 +135,10 @@ Show, in one message:
    `human-resources`, and `quality-assurance`; a company with its own `sales`
    hits the first. Name them here so the user knows the folder is rebuilt, not
    inherited - step 6 (c) handles it.
+5. **How much of the company you actually looked at**, in one line: pages
+   fetched, profiles sampled against the total, and which departments rest on
+   a single piece of evidence. The user is approving a tree built from a
+   surface look, and should be told so before they say yes.
 
 Then ask for an explicit yes. Nothing is written before it. If the user wants
 changes, loop back to the step that owns them.
