@@ -14,6 +14,24 @@ The workspace has three kinds of files. Only the first two are here.
 | Example content | Root `CLAUDE.md`, `context/`, `departments/`, CODEOWNERS, style rule, team skills, `who-is` data | Yes, written fresh for the example company |
 | Company content | Everything specific to the source company | No |
 
+## What this repo adds
+
+The source workspace has no example company to replace, so it has no setup
+path. These belong to this repo, are not in the source, and a refresh must not
+overwrite them:
+
+| Addition | What it is |
+|---|---|
+| `tools/bootstrap/lint.py` (`bootstrap.py lint`) | The structure and security checks that used to live inline in `security-lint.yml`, runnable outside CI |
+| `tools/bootstrap/scaffold.py` (`bootstrap.py scaffold --spec`) | CONTRIBUTING's department/team layout in executable form: `CLAUDE.md`, `projects/.gitkeep`, CODEOWNERS lines, settings stamp |
+| `who_is.py --import` | Rebuilds the org-chart data file from an HR export CSV |
+| `.claude/skills/setup-workspace/` | The one-shot guided replacement of the example company. Deletes itself at the end when the user agrees |
+| `.claude/skills/add-team/` | One department or team folder, any time after setup |
+
+A refresh that re-copies `tools/bootstrap/` from the source must keep
+`lint.py`, `scaffold.py`, their tests, and the two subcommand registrations in
+`bootstrap.py`, and must keep the `--import` half of `who_is.py`.
+
 Path allowlist used for the copy:
 
 ```
@@ -102,11 +120,15 @@ The snapshot is done when all of these hold on a fresh clone:
 1. `grep -ri apify` over the tree matches only this file, the README attribution, and the optional-Actor mentions in the `setup-workspace` skill.
 2. Images reviewed by eye for the source company's variable names.
 3. `python3 -m unittest discover -s tools/bootstrap/tests -t tools/bootstrap` passes.
-4. `bash scripts/test-security.sh` passes.
-5. `python3 tools/bootstrap/bootstrap.py settings-sync --check` is clean.
-6. `bash scripts/audit.sh` reports nothing beyond the documented example-freshness warning.
-7. CI (`security-lint`, `install-verify`) is green.
-8. A Cloud environment with `--team root` and a CLI install both start with the `ACTIVE` banner.
+4. `python3 -m unittest discover -s .claude/skills/who-is/scripts` passes (the `--import` tests).
+5. `bash scripts/test-security.sh` passes.
+6. `python3 tools/bootstrap/bootstrap.py settings-sync --check` is clean.
+7. `python3 tools/bootstrap/bootstrap.py lint` is clean.
+8. `python3 tools/bootstrap/bootstrap.py scaffold --spec <two-department spec> --dry-run` prints the planned tree and writes nothing.
+9. `bash scripts/audit.sh` reports nothing beyond the documented example-freshness warning.
+10. CI (`security-lint`, `maintenance-lint`, `install-verify`) is green.
+11. A Cloud environment with `--team root` and a CLI install both start with the `ACTIVE` banner.
+12. `/setup-workspace` rehearsed on a throwaway clone (never on this working tree) still ends with `doctor`, `lint`, `settings-sync --check`, and `test-security.sh` clean, and with the root markers present at every step.
 
 ## Refreshing the snapshot
 
