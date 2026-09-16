@@ -427,6 +427,18 @@ fi
 section "5. status-banner.sh output"
 # ---------------------------------------------------------------------------
 
+# A stamped team folder to exercise the team-folder cases against. Discovered
+# rather than hardcoded: the example company's departments are deleted the
+# first time someone runs /setup-workspace, and a test that only passes for
+# the example company would fail in every real workspace built from this
+# template. Any tracked department or team folder does equally well.
+SAMPLE_TEAM_DIR=$(cd "$WORKSPACE_ROOT" && \
+  git ls-files 'departments/*/CLAUDE.md' 'departments/**/teams/*/CLAUDE.md' 2>/dev/null \
+  | head -1 | xargs -r dirname)
+if [ -n "$SAMPLE_TEAM_DIR" ]; then
+  SAMPLE_TEAM_DIR="$WORKSPACE_ROOT/$SAMPLE_TEAM_DIR"
+fi
+
 # Team mode with CLAUDE_PROJECT_DIR set = valid JSON with ACTIVE message
 if out=$(CLAUDE_PROJECT_DIR="$WORKSPACE_ROOT" bash "$WORKSPACE_ROOT/.claude/hooks/status-banner.sh" team 2>&1) \
     && echo "$out" | /usr/bin/python3 -m json.tool > /dev/null 2>&1 \
@@ -462,9 +474,9 @@ fi
 # User mode anchored at a stamped team folder = silent (issue #141: the
 # stamped settings.json emits its own banner; the user-scope hook must not
 # contradict it with NOT DETECTED)
-if out=$(cd "$WORKSPACE_ROOT/departments/sales" 2>/dev/null && \
+if out=$(cd "$SAMPLE_TEAM_DIR" 2>/dev/null && \
          env -u CLAUDE_WORKSPACE_ROOT \
-         CLAUDE_PROJECT_DIR="$WORKSPACE_ROOT/departments/sales" \
+         CLAUDE_PROJECT_DIR="$SAMPLE_TEAM_DIR" \
          bash "$WORKSPACE_ROOT/.claude/hooks/status-banner.sh" user 2>&1) \
     && [ -z "$out" ]; then
   tick "status-banner user mode silent at a stamped team folder (issue #141)"
@@ -474,7 +486,7 @@ else
 fi
 
 # User mode inside the workspace without env var = NOT DETECTED JSON
-if out=$(cd "$WORKSPACE_ROOT/departments/sales" 2>/dev/null && \
+if out=$(cd "$SAMPLE_TEAM_DIR" 2>/dev/null && \
          unset CLAUDE_WORKSPACE_ROOT; unset CLAUDE_PROJECT_DIR; \
          bash "$WORKSPACE_ROOT/.claude/hooks/status-banner.sh" user 2>&1) \
     && echo "$out" | /usr/bin/python3 -m json.tool > /dev/null 2>&1 \
@@ -568,12 +580,11 @@ else
   cross "settings-sync --check failed - run 'python3 tools/bootstrap/bootstrap.py settings-sync' and commit"
 fi
 
-STAMP="$WORKSPACE_ROOT/departments/sales/.claude/settings.json"
+STAMP="$SAMPLE_TEAM_DIR/.claude/settings.json"
 
-if [ -f "$STAMP" ] && /usr/bin/python3 - "$STAMP" "$WORKSPACE_ROOT" <<'PY'
+if [ -f "$STAMP" ] && /usr/bin/python3 - "$STAMP" "$WORKSPACE_ROOT" "$SAMPLE_TEAM_DIR" <<'PY'
 import json, subprocess, sys
-stamp_path, workspace_root = sys.argv[1], sys.argv[2]
-team_dir = workspace_root + "/departments/sales"
+stamp_path, workspace_root, team_dir = sys.argv[1], sys.argv[2], sys.argv[3]
 stamp = json.load(open(stamp_path))
 
 def sh(cmd, project_dir, stdin=""):
@@ -636,7 +647,7 @@ PY
 then
   tick "stamped team settings: banner + PreToolUse wrapper behave (ACTIVE/enforce/fail-closed)"
 else
-  cross "stamped team settings misbehave (see above; is departments/sales/.claude/settings.json stamped?)"
+  cross "stamped team settings misbehave (see above; is ${SAMPLE_TEAM_DIR:-<no department folder found>} stamped? run settings-sync)"
 fi
 
 # ---------------------------------------------------------------------------
