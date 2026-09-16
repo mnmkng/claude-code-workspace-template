@@ -70,12 +70,31 @@ step.
 - **No individual people.** No names, no person-level records, no titles tied
   to a person, not in a file, not in the summary, not in the conversation
   afterwards. The org chart is populated from the company's own HR export
-  (step 4), which is the system of record for who works there.
+  (step 4), which is the system of record for who works there. Enforce this at
+  the tool boundary: fetch the run's dataset with a field projection that asks
+  for the position fields only, so the names never enter the transcript in the
+  first place.
 - **Counts are the confidence signal.** Print them: a node backed by two titles
   is a guess the user should correct, one backed by twenty is a fact.
 - **Titles are noisy.** People write their own; a "Growth Hacker" and a
-  "Demand Generation Manager" may sit in the same team. Group by function and
-  say you grouped.
+  "Demand Generation Manager" may sit in the same team, and casing and typos
+  vary ("Software engineer", "Developer Commuity Manager"). Group by function,
+  match case-insensitively, and say you grouped.
+- **The list is not the payroll.** Anyone can name a company as their employer,
+  so a marketplace, franchise, or agency business gets ambassadors, partners,
+  affiliates, certified experts, and freelance builders in the same list as
+  staff. Separate them out and report them as their own line rather than
+  letting them invent a department. Rehearsing this step on a marketplace
+  company put 17 of 200 profiles in that bucket, including "Ambassador",
+  "Marketplace Developer", "Agency Partner", and "Affiliate Partner" titles.
+- **Say what fraction you actually sampled.** The Actor reports
+  `_meta.pagination.totalElements`; compare it with the company's own stated
+  headcount and with how many profiles you retrieved, and print all three. One
+  run returns one page (25 profiles): `takePages` did not advance it in
+  testing, so page through with `startPage` and expect one run per page. The
+  Actor's own free-tier run limit can stop the paging partway - when it does,
+  say the tree is built on a partial sample rather than presenting it as the
+  org.
 
 ## Presenting the summary
 

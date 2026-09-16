@@ -113,6 +113,11 @@ Show, in one message:
    `context/*.md`, the example `who-is` data if it is being replaced, and the
    content of `.claude/rules/style-core.md`.
 3. Every path that will be **written or overwritten**.
+4. **Any department name that collides with an example one.** The example
+   company has `sales`, `accounting`, `warehouse`, `customer-service`,
+   `human-resources`, and `quality-assurance`; a company with its own `sales`
+   hits the first. Name them here so the user knows the folder is rebuilt, not
+   inherited - step 6 (c) handles it.
 
 Then ask for an explicit yes. Nothing is written before it. If the user wants
 changes, loop back to the step that owns them.
@@ -126,8 +131,9 @@ The order is load-bearing: the root markers must hold at every point, and
 |---|---|
 | a | **Overwrite the root `CLAUDE.md` in place** (never delete and recreate): overview, products, pillars or priorities as confirmed, a Context Index with one row per context file about to be written, organization, and a directory structure listing the new departments. CONTRIBUTING "Root CLAUDE.md" has the required sections |
 | b | Write the spec to `projects/setup-spec.json` (gitignored) and run `python3 tools/bootstrap/bootstrap.py scaffold --spec projects/setup-spec.json`. It writes each `CLAUDE.md`, `projects/.gitkeep`, and the CODEOWNERS lines, then stamps the team settings and lints |
-| c | **Only now** delete the example departments (`git rm -r departments/<example>` for each one the user is not keeping) and the example `context/*.md` files, and remove their CODEOWNERS lines |
-| d | Write `context/customers.md`, `competition.md`, `product.md`, `gtm.md`, `key-metrics.md`: H2 structure, confirmed facts with "as of <month year>", `[TODO]` for the rest, and a maintenance header (`edit: here`, `review_every`, `sources` naming where each fact came from, `owner` where the user named one). Set `verified_at` to today only on files whose facts the user confirmed against their sources in step 5; leave it off any file they deferred |
+| c | **Only now** delete **every** example department (`git rm -r departments/<example>`) and the example `context/*.md` files, and remove their CODEOWNERS lines. Delete the colliding ones too - a department the company shares a name with (`sales` is the common one) is still the example's folder, with the example's `CLAUDE.md`, skills, agent, and context inside it: `scaffold` left it alone because the path already existed, which is its idempotence contract, not an endorsement of what is in it |
+| c2 | **Re-run the same `scaffold --spec`.** It is idempotent, so it touches nothing that survived (c) and rebuilds the colliding departments from the template, stamped and linted. Skip this only if no name collided. Check first that at least one non-colliding new department exists, so `departments/` is never empty between (c) and (c2) |
+| d | Write `context/customers.md`, `competition.md`, `product.md`, `gtm.md`, `key-metrics.md`: H2 structure, confirmed facts with "as of <month year>", `[TODO]` for the rest, and a maintenance header (`edit: here`, `review_every`, `sources` naming where each fact came from, `owner` where the user named one). Set `verified_at` to today only on files whose facts the user confirmed against their sources in step 5; leave it off any file they deferred. **Quote any header value containing `: `** - a bare `owner: [TODO: ask HR]` is a parse error in the header's YAML subset, and on a card it also stops the card claiming its data file |
 | e | Overwrite `.claude/rules/style-core.md` with the company's names, product names, terminology, and locale. Keep it short - it is always loaded |
 | f | Append the confirmed industry-specific categories to `.claude/rules/data-sensitivity.md` under its existing headings |
 | g | Rewrite the CODEOWNERS default line and the workspace-file lines with the workspace-owner handle |
